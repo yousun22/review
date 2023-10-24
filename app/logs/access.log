@@ -1,0 +1,67 @@
+2023-10-23 22:26:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:38:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:39:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:39:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:39:01 백앤드 맛보기 info : POST /login  Response: true, undefined
+2023-10-23 22:39:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : POST /login  Response: true, undefined
+2023-10-23 22:41:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : POST /login  Response: true, undefined
+2023-10-23 22:41:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:41:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:41:01 백앤드 맛보기 info : POST /login  Response: true, 
+2023-10-23 22:41:01 백앤드 맛보기 info : GET / 200 "홈 화면으로 이동"
+2023-10-23 22:44:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:44:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:44:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:44:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:44:01 백앤드 맛보기 info : POST /login undefined Response: false, 비밀번호가 틀렸습니다.
+2023-10-23 22:45:01 백앤드 맛보기 info : POST /login undefined Response: false, 비밀번호가 틀렸습니다.
+2023-10-23 22:46:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:46:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:46:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:46:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:47:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:48:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:48:01 백앤드 맛보기 info : GET /login 200 "로그인 화면으로 이동"
+2023-10-23 22:48:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:48:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:49:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:49:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:49:01 백앤드 맛보기 error : POST /login undefined Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:52:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:52:01 백앤드 맛보기 error : POST /login 400 Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 22:53:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 22:54:01 백앤드 맛보기 error : POST /login 400 Response:  false, Error: ER_NO_SUCH_TABLE: Table 'lecture_review1.abc' doesn't exist
+2023-10-23 23:00:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:00:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:01:01 백앤드 맛보기 info : POST /login 200 Response: false, 존재하지 않는 아이디 입니다.
+2023-10-23 23:16:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:16:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:17:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:17:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:17:01 백앤드 맛보기 info : POST /login 200 Response: false, 비밀번호가 틀렸습니다.
+2023-10-23 23:17:01 백앤드 맛보기 info : POST /login 200 Response: false, 비밀번호가 틀렸습니다.
+2023-10-23 23:18:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:18:01 백앤드 맛보기 info : POST /login 200 Response: false, 존재하지 않는 아이디 입니다.
+2023-10-23 23:18:01 백앤드 맛보기 info : POST /login 200 Response: false, 존재하지 않는 아이디 입니다.
+2023-10-23 23:18:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:18:01 백앤드 맛보기 info : POST /login 200 Response: true, 
+2023-10-23 23:18:01 백앤드 맛보기 info : GET / 304 "홈 화면으로 이동"
+2023-10-23 23:18:01 백앤드 맛보기 info : POST /login 200 Response: false, 존재하지 않는 아이디 입니다.
+2023-10-23 23:18:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:18:01 백앤드 맛보기 info : POST /login 200 Response: true, 
+2023-10-23 23:18:01 백앤드 맛보기 info : GET / 304 "홈 화면으로 이동"
+2023-10-23 23:19:01 백앤드 맛보기 info : GET /login 304 "로그인 화면으로 이동"
+2023-10-23 23:19:01 백앤드 맛보기 info : POST /login 200 Response: true, 
+2023-10-23 23:19:01 백앤드 맛보기 info : GET / 304 "홈 화면으로 이동"
+2023-10-23 23:19:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:21:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:27:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:30:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:31:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:33:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
+2023-10-23 23:38:01 백앤드 맛보기 info : 3000 포트에서 서버가 가동되었습니다.
