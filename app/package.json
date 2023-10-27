@@ -79,6 +79,7 @@
     "set-function-length": "^1.1.1",
     "setprototypeof": "^1.2.0",
     "side-channel": "^1.0.4",
+    "socket.io": "^4.7.2",
     "statuses": "^2.0.1",
     "supports-color": "^7.2.0",
     "toidentifier": "^1.0.1",

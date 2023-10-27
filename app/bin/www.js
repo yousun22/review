@@ -55,7 +55,7 @@ var server = net.createServer(function(socket){
 		//var obj3=JSON.parse(obj2);
         //var obj=JSON.parse(cat)
 		//cat.replace(/\n/g, "");
-        console.log(obj2);
+        //console.log(obj2);
 
 
 		// dht11.save(function(err){
@@ -76,10 +76,11 @@ var server = net.createServer(function(socket){
 	});
 });
 
-server.listen(8080, (err)=>{
+server.listen(8001, (err)=>{
     if(err){
          return console.log(err);
     }else{
         console.log('listening on 8080..');
     }
 });
+

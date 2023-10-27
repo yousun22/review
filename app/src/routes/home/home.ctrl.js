@@ -17,7 +17,12 @@ const output ={
      register: (req, res)=>{
         logger.info(`GET /register 304 "회원가입 화면으로 이동"`);
         res.render("home/register");
-     }
+     },
+
+     upDATE: (req, res)=>{
+      logger.info(`GET /upDATE 304 "데이터 화면으로 이동"`);
+      res.render("home/upDATE");
+     },
 };
 
 
