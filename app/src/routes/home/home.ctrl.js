@@ -19,9 +19,9 @@ const output ={
         res.render("home/register");
      },
 
-     upDATE: (req, res)=>{
-      logger.info(`GET /upDATE 304 "데이터 화면으로 이동"`);
-      res.render("home/upDATE");
+     userif: (req, res)=>{
+      logger.info(`GET /userif 304 "데이터 화면으로 이동"`);
+      res.render("home/userif");
      },
 };
 

@@ -32,6 +32,42 @@ app.get('/api/getObj2', (req, res) => {
     res.json(obj2);
 });
 
+app.get('/api/getLatestData', (req, res) => {
+    // 데이터베이스에서 최신 데이터를 가져옴
+    // 예제 데이터로 대체
+    const latestData = {
+        waterm: '데이터베이스에서 가져온 값',
+        created_at: new Date().toLocaleString(), // 현재 시간을 사용하거나 데이터베이스에서 가져온 시간 사용
+    };
+    res.json(latestData);
+});
+
+
+app.get('/test', (req, res) => {
+	connection.query('SELECT waterdata FROM waterm ORDER BY created_at DESC LIMIT 1', (err, results) => {
+	  if (err) {
+		console.error('Error retrieving data from MySQL: ' + err);
+		return res.status(500).send('Error retrieving data from MySQL');
+	  }
+  
+	  if (results.length > 0) {
+		const latestData = results[0].waterdata;
+		const html = `<html>
+		  <head>
+			<title>데이터 표시 예제</title>
+		  </head>
+		  <body>
+			<h1>최신 데이터:</h1>
+			<p>${latestData}</p>
+		  </body>
+		</html>`;
+  
+		res.send(html);
+	  } else {
+		res.send('No data found in the database.');
+	  }
+	});
+  });
 
 
 module.exports =app;
