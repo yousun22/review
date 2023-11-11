@@ -64,7 +64,8 @@ var server = net.createServer(function(socket){
         console.log(req.body); // 요청 본문 로깅
         const toggleState = req.body.toggleState;
     
-  
+        const toggleStateString = toggleState ? "11" : "00";
+        
         console.log(clientSocket)
         if (clientSocket) {
             // 토글 상태를 클라이언트 소켓으로 전송합니다.
@@ -98,7 +99,7 @@ var server = net.createServer(function(socket){
         var month=date.getMonth();
         var today=date.getDate();
         var hours=date.getHours();
-        var minutes =date.getMinutes();
+        var minutes =date.getMinutes();true
         var seconds =date.getSeconds();
         obj.created_at= new Date(Date.UTC(year, month, today, hours, minutes, seconds));
 		var obj2=JSON.stringify(obj);
