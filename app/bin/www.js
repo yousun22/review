@@ -64,7 +64,7 @@ var server = net.createServer(function(socket){
         console.log(req.body); // 요청 본문 로깅
         const toggleState = req.body.toggleState;
     
-        const toggleStateString = toggleState ? "11" : "00";
+        const toggleStateString = toggleState ? "oo" : "ff";
         
         console.log(clientSocket)
         if (clientSocket) {
