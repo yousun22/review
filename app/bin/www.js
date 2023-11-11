@@ -69,7 +69,7 @@ var server = net.createServer(function(socket){
         console.log(clientSocket)
         if (clientSocket) {
             // 토글 상태를 클라이언트 소켓으로 전송합니다.
-            clientSocket.write(toggleState.toString(), 'utf8', (err) => {
+            clientSocket.write(toggleStateString.toString(), 'utf8', (err) => {
                 if (err) {
                     console.error('Error sending data to client:', err);
                     res.status(500).send('Error sending data to client');
