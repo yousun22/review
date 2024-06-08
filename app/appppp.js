@@ -1,4 +1,4 @@
-"use strict";
+"use strict"
 
 // 모듈
 const express = require("express");
@@ -8,6 +8,11 @@ const dotenv = require("dotenv");
 dotenv.config();
 
 const app = express();
+
+// 로그인 기능 추가 부분
+const session = require('express-session');
+const userifRoutes = require('./src/routes/home/userif');
+const authMiddleware = require('./src/middleware/auth');
 
 // 로그 설정
 const accessLogStream = require("./src/config/log");
@@ -24,19 +29,15 @@ app.use(express.static(`${__dirname}/src/public`));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 로그인 기능 제거 - 세션 설정, 인증 미들웨어, 사용자 인터페이스 라우트 제거
-// app.use(session({
-//     secret: 'your-secret-key',
-//     resave: false,
-//     saveUninitialized: true
-// }));
-
-// 로그인 기능 제거 - 인증 미들웨어 및 사용자 인터페이스 라우트 제거
-// const authMiddleware = require('./src/middleware/auth');
-// const userifRoutes = require('./src/routes/home/userif');
-// app.use("/userif", authMiddleware, userifRoutes); 
+// 세션 설정
+app.use(session({
+    secret: 'your-secret-key',
+    resave: false,
+    saveUninitialized: true
+}));
 
 // 라우트 설정
+app.use("/userif", authMiddleware, userifRoutes); // authMiddleware를 /userif 경로에 적용
 app.use("/", home);
 
 // API 엔드포인트

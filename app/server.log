@@ -1,0 +1,19 @@
+{"level":"info","message":"3000 포트에서 서버가 가동되었습니다."}
+{"level":"info","message":"Server listening on port 61..."}
+{"level":"info","message":"Connected to MySQL database as id 69926"}
+{"level":"error","message":"Client socket not found for key:"}
+{"level":"error","message":"Client socket not found for key:"}
+{"level":"info","message":"3000 포트에서 서버가 가동되었습니다."}
+{"level":"info","message":"Server listening on port 61..."}
+{"level":"info","message":"Connected to MySQL database as id 69927"}
+{"level":"info","message":"::ffff:27.166.242.168:48091 connected."}
+{"level":"error","message":"Error with client ::ffff:27.166.242.168:48091: read ECONNRESET"}
+{"level":"info","message":"::ffff:27.166.242.168:48091 disconnected."}
+{"level":"info","message":"::ffff:27.170.229.148:42828 connected."}
+{"level":"info","message":"::ffff:27.173.112.151:4856 connected."}
+{"level":"info","message":"3000 포트에서 서버가 가동되었습니다."}
+{"level":"info","message":"Server listening on port 61..."}
+{"level":"info","message":"Connected to MySQL database as id 69929"}
+{"level":"info","message":"3000 포트에서 서버가 가동되었습니다."}
+{"level":"info","message":"Server listening on port 61..."}
+{"level":"info","message":"Connected to MySQL database as id 69930"}

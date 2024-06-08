@@ -1,0 +1,342 @@
+body {
+    font-family: 'Arial', sans-serif;
+    background-color: #f4f4f4;
+    margin: 0;
+    padding: 0;
+  }
+  
+  .card-container {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1rem;
+  }
+  
+  .card {
+    background-color: #ffffff;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    padding: 20px;
+    width: calc(100% / 3 - 2rem); /* 화면의 1/3 크기에서 gap을 제외한 크기 */
+    box-sizing: border-box;
+    transition: transform .2s;
+    text-align: center;
+    border: 3px solid #333333;  /* 동일한 색상의 테두리 */
+    border: 2px solid transparent; /* 투명 테두리 */
+    background-image: linear-gradient(white, white), linear-gradient(90deg, #4f8ad8,#a8db8f, #fcd76a); /* 연두색 -> 노란색 -> 파란색으로 그라데이션 변경 */
+    background-origin: border-box; /* 배경 원점을 테두리 박스로 설정 */
+    background-clip: padding-box, border-box; /* 배경 클리핑 영역 설정 */
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1); /* 박스 그림자 추가 */
+    margin: 1rem; /* 카드 사이의 간격을 유지 */
+  }
+  
+  .card:hover,
+  .card.touch {
+    transform: scale(1.05);
+  }
+  
+  @media screen and (max-width: 768px) {
+    .card {
+      width: 100%; /* 모바일 화면에서는 카드를 화면 전체 너비로 설정 */
+    }
+  }
+  
+  @media screen and (max-width: 320px) {
+    .card {
+      width: 100%; /* 작은 화면에서는 카드를 화면 전체 너비로 설정 */
+      padding: 10px; /* 패딩 줄이기 */
+      margin: 0.5rem; /* 카드 사이의 간격을 줄이기 */
+    }
+  
+    .card-header {
+      font-size: 1em; /* 작은 화면에서 폰트 크기 줄이기 */
+    }
+  
+    .sensor-title {
+      font-size: 1.6em; /* 작은 화면에서 센서 타이틀 폰트 크기 줄이기 */
+    }
+  
+    .mode-selection {
+      flex-direction: row; /* 작은 화면에서는 가로로 나열 */
+      align-items: center; /* 가로 정렬 시 중앙 정렬 */
+      justify-content: flex-start; /* 공간을 적절히 분배 */
+    }
+  
+    .mode-selection .operation-mode {
+      font-size: 0.8em; /* 작은 화면에서 글자 크기 줄이기 */
+      margin-right: 10px; /* 모드와 수동 사이의 간격 줄이기 */
+    }
+  
+    #mode {
+      font-size: 0.8em; /* 작은 화면에서 콤보박스 폰트 크기 줄이기 */
+      padding: 2px 5px; /* 패딩 줄이기 */
+      margin-right: 10px; /* 콤보박스와 수동 사이의 간격 줄이기 */
+    }
+  
+    .switch {
+      width: 100px; /* 작은 화면에서 스위치 크기 조정 */
+      height: 34px; /* 작은 화면에서 스위치 높이 조정 */
+      margin-left: 10px; /* 수동과 토글 사이의 간격 줄이기 */
+    }
+  
+    .slider:before {
+      height: 26px; /* 슬라이더 높이 조정 */
+      width: 26px; /* 슬라이더 너비 조정 */
+      left: 4px; /* 슬라이더 위치 조정 */
+      bottom: 4px; /* 슬라이더 위치 조정 */
+    }
+  
+    input:checked + .slider:before {
+      transform: translateX(66px); /* 슬라이더 위치 조정 */
+    }
+  
+    #countdown {
+      font-size: 10px; /* 작은 화면에서 카운트다운 폰트 크기 줄이기 */
+    }
+  
+    .card-end {
+      font-size: 0.7em; /* 작은 화면에서 하단 정보 폰트 크기 줄이기 */
+    }
+  }
+  
+  .card-header {
+    border-bottom: 1px solid #cccccc; /* 하단 테두리 추가 */
+    padding-bottom: 2px;  /* padding 추가 */
+    margin-bottom: 2px;  /* margin 추가 */
+    font-size: 0.9em;  /* 폰트 크기 조정 */
+    color: #666666;  /* 글자 색상 */
+    text-align: left;  /* 왼쪽 정렬 */
+    position: relative; /* .triangle-btn의 위치를 기준으로 설정 */
+  }
+  
+  .bold-text {
+    font-weight: bold;  /* 볼드 처리 */
+  }
+  
+  .triangle-btn {
+    position: absolute; /* 절대 위치 지정 */
+    right: 1px; /* 오른쪽에서 10px 위치 */
+    top: 40%; /* 세로 중앙으로 위치 설정 */
+    transform: translateY(-50%); /* 세로 중앙 정렬 */
+    width: 0;
+    height: 0;
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 10px solid  #666666;  /* 삼각형의 색상 */
+    background-color: transparent;
+    transform: translateY(-50%) rotate(90deg); /* 90도 회전 및 세로 중앙 정렬 */;
+  }
+  
+  .triangle-btn:hover {
+    border-bottom-color:  #666666; /* 호버 시 삼각형의 색상 변경 */
+  }
+  
+  .card-header {
+    display: flex;
+    align-items: center;
+  }
+  
+  .water-level-icon {
+    display: inline-block;
+    vertical-align: middle;
+    width: 20px; /* 물컵의 너비 */
+    height: 30px; /* 물컵의 높이 */
+    border: 2px solid #000;
+    border-radius: 3px;
+    position: relative;
+    margin-right: 10px; /* 물컵과 글자 사이의 간격 */
+    margin-bottom: 4px; /* 요소를 약간 위로 올리기 위해 음수 값 사용 */
+  }
+  
+  .water {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    height: 30%; /* 물이 차 있는 높이 (2/3) */
+    background-color: #65cff07e; /* 물의 색상 */
+    border-top: 1px solid #65cff07e; /* 물과 테두리의 구분선 */
+  }
+  .sensor-title {
+    display: flex; /* 플렉스박스 사용 */
+    align-items: center; /* 수직 방향 중앙 정렬 */
+    justify-content: flex-start; /* 수평 방향 왼쪽 정렬 */
+    text-align: left; /* 텍스트 왼쪽 정렬 */
+    margin-top: 16px; /* margin-top을 줄여서 간격 줄이기 */
+  }
+  
+  .measurement {
+    margin-left: 10px; /* 왼쪽에 5px의 여백을 추가 */
+  }
+  
+  .operation-mode {
+    text-align: left; /* 텍스트를 왼쪽으로 정렬 */
+  }
+  
+  .mode-selection {
+    display: flex;
+    align-items: center;
+    text-align: left;
+  }
+  
+  .mode-selection .operation-mode {
+    margin-right: 5px; /* 모드와 수동 사이의 간격 줄이기 */
+  }
+  
+  /* #mode 콤보박스 스타일 */
+  #mode {
+    padding: 4px 10px; /* 패딩을 줄임 */
+    border: 1px solid #19a9e2a9;
+    border-radius: 4px;
+    background-color: white;
+    font-size: 15px;
+    color: #333;
+    cursor: pointer;
+    outline: none;
+    appearance: none;
+    -moz-appearance: none;
+    -webkit-appearance: none;
+    background: url('dropdown-arrow.png') no-repeat right 10px center;
+    background-size: 16px 12px;
+    width: auto; /* 너비를 auto로 설정하여 내용에 맞게 조정 */
+    max-width: 150px; /* 최대 너비를 설정하여 너무 커지지 않도록 함 */
+    margin-right: 5px; /* 콤보박스와 수동 사이의 간격 줄이기 */
+  }
+  
+  #mode:hover {
+    border-color:  #19a9e2a9;
+  }
+  
+  #mode:focus {
+    border-color:  #19a9e2a9;
+  }
+  
+  #mode option {
+    padding: 4px;
+    background-color: white;
+  }
+  
+  .switch-container {
+    position: relative;
+    display: inline-block;
+    margin-left: 30px; /* 필요한 경우 추가 공간 제공 */
+  }
+  
+  /* 토글 스위치 전체 스타일 */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 110px; /* 스위치 너비 조정 */
+    height: 34px; /* 스위치 높이 조정 */
+    margin-left: 5px; /* 수동과 토글 사이의 간격 줄이기 */
+  }
+  
+  #countdown {
+    position: absolute;
+    left: 58%; /* 스위치의 우측 끝에서부터 */
+    top: -40%; /* 상위 요소의 중간 위치에서 */
+    transform: translateY(-50%); /* Y축 기준 중앙 정렬 */
+    padding: 2px 5px; /* 적절한 패딩 */
+    background-color: #fff; /* 배경색 */
+    border: 1px solid #ccc; /* 경계선 */
+    border-radius: 5px; /* 둥근 모서리 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* 그림자 효과 */
+    font-size: 10px; /* 폰트 크기 */
+    margin-left: 10px; /* 왼쪽에 여백 추가 */
+  }
+  
+  /* 토글 스위치의 슬라이더(가운데 움직이는 부분) 스타일 */
+  .switch input { 
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 34px; /* 모서리 둥글게 설정 */
+  }
+  
+  /* '열림'과 '닫힘' 텍스트 스타일 */
+  .on {
+    position: absolute;
+    color: white;
+    transform: translateY(-50%);
+    top: 50%;
+    left: 7px; /* 왼쪽에서부터의 위치 조정 */
+    opacity: 0; /* 기본 상태에서는 숨김 */
+    transition: opacity 0.4s, left 0.4s; /* 위치 이동 애니메이션 추가 */
+    font-size: 0.9em; /* 글자 크기 줄이기 */
+  }
+  
+  .off {
+    position: absolute;
+    color: black; /* 텍스트 색상을 검은색으로 변경 */
+    transform: translateY(-50%);
+    top: 50%;
+    right: 17px; /* 오른쪽에서부터의 위치 조정 */
+    opacity: 1; /* 기본 상태에서는 보임 */
+    transition: opacity 0.4s, right 0.4s; /* 위치 이동 애니메이션 추가 */
+    font-size: 0.9em; /* 글자 크기 줄이기 */
+  }
+  
+  /* 슬라이더의 배경색 변경 및 '열림' 텍스트 가시성 변경 */
+  input:checked + .slider {
+    background-color: #2196F3;
+  }
+  
+  input:checked + .slider .on {
+    left: 15px; /* 스위치가 켜질 때 '열림' 텍스트 위치 조정 */
+    opacity: 1; /* 스위치가 켜질 때 '열림' 텍스트 보이기 */
+  }
+  
+  input:checked + .slider .off {
+    right: 15px; /* 스위치가 켜질 때 '닫힘' 텍스트 위치 조정 */
+    opacity: 0; /* 스위치가 켜질 때 '닫힘' 텍스트 숨기기 */
+  }
+  
+  input:not(:checked) + .slider .on {
+    opacity: 0; /* 스위치가 꺼질 때 '열림' 텍스트 숨기기 */
+  }
+  
+  input:not(:checked) + .slider .off {
+    opacity: 1; /* 스위치가 꺼질 때 '닫힘' 텍스트 보이기 */
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px; /* 슬라이더 높이 조정 */
+    width: 26px; /* 슬라이더 너비 조정 */
+    left: 4px; /* 슬라이더 위치 조정 */
+    bottom: 4px; /* 슬라이더 위치 조정 */
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  
+  /* 슬라이더 움직임 조정 */
+  input:checked + .slider:before {
+    transform: translateX(74px); /* 슬라이더의 위치를 조정 */
+  }
+  
+  .card-end {
+    padding-bottom: 8px;  /* padding 추가 */
+    margin-top: 16px;  /* margin 추가 */
+    font-size: 14px;  /* 폰트 크기 조정 */
+    color: #666666;  /* 글자 색상 */
+    text-align: left;  /* 왼쪽 정렬 */
+    position: relative; /* .triangle-btn의 위치를 기준으로 설정 */
+  }
+  
+  .additional-info {
+    color: #333; /* 글자 색상 조절 */
+    margin-top: 15px; /* 위 요소와의 마진 조절 */
+    font-size: 11.2px; /* 작은 화면에서 하단 정보 폰트 크기 줄이기 */
+  }

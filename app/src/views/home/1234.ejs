@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>센서 수위 정보</title>
+    <link rel="stylesheet" href="/css/home/toggle.css">
+</head>
+<script>
+  window.addEventListener('load', function () {
+      // 서버로부터 오는 이벤트를 위한 EventSource 객체를 생성합니다.
+      const eventSource = new EventSource('/events');
+  
+      eventSource.onmessage = function(e) {
+          // 서버로부터 메시지 이벤트가 오면 이를 처리합니다.
+          const data = JSON.parse(e.data);
+          // 데이터를 웹 페이지에 표시합니다.
+          document.getElementById('data').innerText = data;
+      };
+  
+      eventSource.onerror = function(e) {
+          // 에러 발생 시 처리
+          console.error('EventSource failed:', e);
+          eventSource.close();
+      };
+  
+      // 페이지를 벗어나거나 닫을 때 EventSource 연결을 닫습니다.
+      window.onbeforeunload = function() {
+          eventSource.close();
+      };
+  });
+  </script>
+<script>
+function setupToggleSwitchListener() {
+    var toggleSwitch = document.getElementById('toggle-switch');
+    var countdownTimer = document.getElementById('countdown');
+    var toggleContainer = toggleSwitch.closest('.switch'); // 토글 스위치가 포함된 컨테이너를 찾습니다.
+
+    toggleSwitch.addEventListener('change', function() {
+        sendToggleStateToServer(this.checked, () => {
+            toggleSwitch.disabled = true;
+            countdownTimer.style.display = 'inline'; // 카운트다운을 보이게 합니다.
+            startCountdown(20); // 20초 카운트다운 시작
+        });
+    });
+
+    function startCountdown(duration) {
+        var timer = duration, minutes, seconds;
+        var countdownInterval = setInterval(function () {
+            minutes = parseInt(timer / 60, 10);
+            seconds = parseInt(timer % 60, 10);
+
+            minutes = minutes < 10 ? "0" + minutes : minutes;
+            seconds = seconds < 10 ? "0" + seconds : seconds;
+
+            countdownTimer.textContent = minutes + ":" + seconds;
+
+            if (--timer < 0) {
+                timer = duration;
+                clearInterval(countdownInterval);
+                toggleSwitch.disabled = false;
+                countdownTimer.style.display = 'none'; // 카운트다운을 숨깁니다.
+            }
+        }, 1000);
+    }
+}
+
+function sendToggleStateToServer(state, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', '/update_toggle_state', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+
+    xhr.onload = function() {
+        if (xhr.status === 200) {
+            console.log('Toggle state updated successfully');
+        } else {
+            console.error('Error updating toggle state');
+        }
+        callback(); // 서버 응답 후 콜백 함수 실행
+    };
+
+    xhr.onerror = function() {
+        console.error('Network error');
+        callback(); // 네트워크 오류 시 콜백 함수 실행
+    };
+
+    xhr.send(JSON.stringify({toggleState: state}));
+}
+
+window.addEventListener('load', setupToggleSwitchListener);
+
+</script>
+  </head>
+  <body>
+
+    <div class="card-container">
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391869</span>  |  매우먼논  |  아람1
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span id="data">0.0</span>cm | 5.0cm
+              <!-- <span class="measurement">5.2cm | 5.0cm</span> -->
+              <div id="data-container"></div>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                  <span id="countdown" style="display: none;">00:20</span>
+                </label>
+                
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 10일 이앙   |    아람    |    예상 출수기(8월 19일) + 3day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391890</span>  |  원산마을  |  조원늦게1
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">2.3cm | 7.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 20일 이앙   |    조원    |    예상 출수기(8월 11일) </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391820</span>  |  문대마을  |  아람2
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">3.4cm | 7.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  매우먼논  |  아람3
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">3.0cm | 5.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람4
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">3.1cm | 5.2cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람5
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">3.0cm | 5.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 14일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  매우먼논  |  아람6
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">2.4cm | 7.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 14일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람7
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">4.2cm | 6.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
+                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람8
+            </div>
+            <h2 class="sensor-title">
+              <div class="water-level-icon">
+                <div class="water"></div>
+              </div>
+              <span class="measurement">2.2cm | 4.0cm</span>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode" id="mode">
+                  <option value="manual">수동</option>
+                  <option value="auto">자동</option>
+                  <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch">
+                    <span class="slider round">
+                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
+                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                    </span>
+                </label>
+
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
+            </div>
+
+        </div>
+        
+    </div>
+
+    
+    </body>
+    </html>

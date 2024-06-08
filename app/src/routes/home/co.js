@@ -23,11 +23,6 @@ const output ={
       logger.info(`GET /userif 304 "데이터 화면으로 이동"`);
       res.render("home/userif");
      },
-
-     userifse: (req, res)=>{
-      logger.info(`GET /userifse 304 "데이터 화면으로 이동"`);
-      res.render("home/userifse");
-     },
 };
 
 
