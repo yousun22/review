@@ -1,19 +1,34 @@
 "use strict";
+console.log('Current working directory:', process.cwd());
 let globalToggleStates = {}; // 각 전화번호별 상태를 관리하는 객체
 require('dotenv').config(); // .env 파일에서 환경 변수를 로드
 const app = require("../app");
 const logger = require("../src/config/logger");
 const mysql = require('mysql');
 const net = require('net');
+const fs = require('fs');
+const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const TCP_PORT = 61;
+const TCP_PORT = 8080;
 
 let connection;
 let retryTimeout = 35000; // 35초 후 재시도
 const pingInterval = 1 * 60 * 1000; // 15분
 const secondPingDelay = 0.2 * 60 * 1000; // 1분
 const timeoutThreshold = 3 * 60 * 1000; // 2분
+
+// 홈 디렉터리 설정 및 존재 여부 확인
+const homeDir = process.env.HOME || process.env.USERPROFILE || path.resolve(__dirname, '../../');
+const appDir = path.join(homeDir, 'lecture-review1/app');
+
+if (fs.existsSync(appDir)) {
+    process.chdir(appDir);
+} else {
+    console.warn(`Directory does not exist: ${appDir}`);
+    // 디렉터리가 존재하지 않으면 현재 디렉터리로 설정
+    process.chdir(path.resolve(__dirname, '../../app'));
+}
 
 function connectToDatabase(retries = 5, delay = 5000) {
     if (retries === 0) {

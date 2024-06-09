@@ -26,16 +26,12 @@ if (fs.existsSync(appDir)) {
     process.chdir(appDir);
 } else {
     console.warn(`Directory does not exist: ${appDir}`);
-    // 디렉터리가 존재하지 않으면 현재 디렉터리로 설정
+    // 디렉터리가 존재하지 않으면 현재 디렉토리로 설정
     process.chdir(path.resolve(__dirname, '../../app'));
 }
 
-function connectToDatabase(retries = 5, delay = 5000) {
-    if (retries === 0) {
-        console.error('Failed to connect to MySQL after several attempts.');
-        return;
-    }
-
+// MySQL 연결 및 재연결 로직
+function handleDisconnect() {
     connection = mysql.createConnection({
         host: process.env.DB_HOST,
         user: process.env.DB_USER,
@@ -47,8 +43,8 @@ function connectToDatabase(retries = 5, delay = 5000) {
 
     connection.connect(err => {
         if (err) {
-            console.error(`Error connecting to MySQL database: ${err.stack}, retrying in ${delay / 1000} seconds...`);
-            setTimeout(() => connectToDatabase(retries - 1, delay), delay);
+            console.error('Error connecting to MySQL:', err);
+            setTimeout(handleDisconnect, 2000); // 2초 후 재시도
         } else {
             console.log('Connected to MySQL database as id ' + connection.threadId);
             fetchLatestToggleStates(); // 서버 시작 시 최신 상태를 가져옵니다.
@@ -56,13 +52,17 @@ function connectToDatabase(retries = 5, delay = 5000) {
     });
 
     connection.on('error', function(err) {
-        console.error('Database connection error:', err);
+        console.error('MySQL error', err);
         if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET' || err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
             console.log('Reconnecting after connection lost or reset...');
-            connectToDatabase(retries, delay);
+            handleDisconnect();
+        } else {
+            throw err;
         }
     });
 }
+
+handleDisconnect();
 
 function fetchLatestToggleStates() {
     connection.query('SELECT phonenum, valve_of FROM (SELECT phonenum, valve_of, ROW_NUMBER() OVER (PARTITION BY phonenum ORDER BY created_at DESC) as rnum FROM waterm) temp WHERE rnum = 1', 
@@ -87,8 +87,6 @@ function fetchLatestToggleStates() {
         }
     });
 }
-
-connectToDatabase();
 
 app.listen(PORT, () => {
     logger.info(`${PORT} 포트에서 서버가 가동되었습니다.`);
@@ -415,7 +413,7 @@ setInterval(() => {
 process.on('uncaughtException', function (err) {
     console.error('Uncaught exception:', err);
     // 복구 시도 또는 안전하게 종료
-    connectToDatabase(); // MySQL 연결 복구 시도
+    handleDisconnect(); // MySQL 연결 복구 시도
     server.close(() => {
         server.listen(TCP_PORT, () => console.log(`Server re-listening on port ${TCP_PORT}...`));
     });
