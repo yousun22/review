@@ -1,4 +1,5 @@
 "use strict";
+console.log('Current working directory:', process.cwd());
 let globalToggleStates = {}; // 각 전화번호별 상태를 관리하는 객체
 require('dotenv').config(); // .env 파일에서 환경 변수를 로드
 const app = require("../app");
@@ -9,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const TCP_PORT = 61;
+const TCP_PORT = 8080;
 
 let connection;
 let retryTimeout = 35000; // 35초 후 재시도
