@@ -15,6 +15,11 @@ const pingInterval = 1 * 60 * 1000; // 15분
 const secondPingDelay = 0.2 * 60 * 1000; // 1분
 const timeoutThreshold = 3 * 60 * 1000; // 2분
 
+// 뷰 엔진 설정 추가
+const path = require('path');
+app.set('views', path.join(__dirname, '../src/views'));
+app.set('view engine', 'ejs');
+
 function connectToDatabase(retries = 5, delay = 5000) {
     if (retries === 0) {
         console.error('Failed to connect to MySQL after several attempts.');

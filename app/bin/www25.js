@@ -12,8 +12,8 @@ const TCP_PORT = 61;
 let connection;
 let retryTimeout = 35000; // 35초 후 재시도
 const pingInterval = 1 * 60 * 1000; // 15분
-const secondPingDelay = 1 * 60 * 1000; // 1분
-const timeoutThreshold = 2 * 60 * 1000; // 2분
+const secondPingDelay = 0.2 * 60 * 1000; // 1분
+const timeoutThreshold = 3 * 60 * 1000; // 2분
 
 function connectToDatabase(retries = 5, delay = 5000) {
     if (retries === 0) {
@@ -42,9 +42,9 @@ function connectToDatabase(retries = 5, delay = 5000) {
 
     connection.on('error', function(err) {
         console.error('Database connection error:', err);
-        if (err.fatal) {
+        if (err.code === 'PROTOCOL_CONNECTION_LOST' || err.code === 'ECONNRESET' || err.code === 'PROTOCOL_ENQUEUE_AFTER_FATAL_ERROR') {
             console.log('Reconnecting after connection lost or reset...');
-            setTimeout(() => connectToDatabase(retries, delay), delay);
+            connectToDatabase(retries, delay);
         }
     });
 }
@@ -74,17 +74,6 @@ function fetchLatestToggleStates() {
 }
 
 connectToDatabase();
-
-// 주기적으로 MySQL 연결 유지
-setInterval(() => {
-    if (connection && connection.state !== 'disconnected') {
-        connection.query('SELECT 1', (err) => {
-            if (err) {
-                console.error('Error maintaining MySQL connection:', err);
-            }
-        });
-    }
-}, 60000); // 1분마다 실행
 
 app.listen(PORT, () => {
     logger.info(`${PORT} 포트에서 서버가 가동되었습니다.`);
@@ -253,8 +242,8 @@ var server = net.createServer(function(socket) {
         socket.end();
     });
 
-    socket.on('close', function(hadError) {
-        console.log(`${clientKey} disconnected. Had error: ${hadError}`);
+    socket.on('close', function() {
+        console.log(`${clientKey} disconnected.`);
         if (clients[clientKey]) {
             clearTimeout(clients[clientKey].timer);
         }
@@ -392,13 +381,13 @@ function sendPingToClients() {
 // 15분마다 연결 확인 메시지 전송
 setInterval(sendPingToClients, pingInterval);
 
-// 2분 동안 메시지를 받지 못한 클라이언트 소켓 종료
+// 3분 동안 메시지를 받지 못한 클라이언트 소켓 종료
 setInterval(() => {
     const now = Date.now();
     Object.keys(clients).forEach(clientKey => {
         const lastReceived = lastMessageReceivedTimes[clientKey] || 0;
         if (now - lastReceived > timeoutThreshold) {
-            console.log(`Client ${clientKey} has not sent any messages for more than 20 minutes. Closing socket.`);
+            console.log(`Client ${clientKey} has not sent any messages for more than 3 minutes. Closing socket.`);
             const client = clients[clientKey];
             if (client && client.socket) {
                 client.socket.end();
