@@ -6,118 +6,160 @@
     <title>IoT 논물꼬 (Changwon, 1272)_Linchipin</title>
     <link rel="stylesheet" href="/css/home/toggle.css">
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        .countdown {
+            display: none;
+            position: absolute;
+            top: -20px; /* 토글 스위치 위에 표시 */
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            color: red;
+        }
+        .reconnect-message {
+            color: red;
+            font-weight: bold;
+            font-size: 14px;
+        }
+    </style>
     <script>
         window.addEventListener('load', function () {
-            const phonenum = 37441272; // 특정 전화번호 지정
-            // 서버로부터 오는 이벤트를 위한 EventSource 객체를 생성합니다.
+            const phonenum1 = 37441272; // 첫 번째 장비 전화번호
+            const phonenum2 = 37441273; // 두 번째 장비 전화번호
+            const phonenum3 = 37475978; // 세 번째 장비 전화번호
+
+            setupEventSource(phonenum1, 'data');
+            setupEventSource(phonenum2, 'data2');
+            setupEventSource(phonenum3, 'data3');
+
+            setupToggleSwitchListener(phonenum1, 'toggle-switch1', 'countdown1', 'toggleDisplay1', 'reconnectMessage1');
+            setupToggleSwitchListener(phonenum2, 'toggle-switch2', 'countdown2', 'toggleDisplay2', 'reconnectMessage2');
+            setupToggleSwitchListener(phonenum3, 'toggle-switch3', 'countdown3', 'toggleDisplay3', 'reconnectMessage3');
+        });
+
+        function setupEventSource(phonenum, dataElementId) {
             const eventSource = new EventSource(`/events?phonenum=${phonenum}`);
-
             eventSource.onmessage = function(e) {
-                // 서버로부터 메시지 이벤트가 오면 이를 처리합니다.
                 const data = JSON.parse(e.data);
-                // 데이터를 웹 페이지에 표시합니다.
-                document.getElementById('data').innerText = data;
+                document.getElementById(dataElementId).innerText = data;
             };
-
             eventSource.onerror = function(e) {
-                // 에러 발생 시 처리
                 console.error('EventSource failed:', e);
                 eventSource.close();
             };
-
-            // 페이지를 벗어나거나 닫을 때 EventSource 연결을 닫습니다.
             window.onbeforeunload = function() {
                 eventSource.close();
             };
-        });
+        }
 
-        function setupToggleSwitchListener() {
-            var toggleSwitch = document.querySelector('[data-phonenum="37441272"]'); // 특정 전화번호 필터링
-            var countdownTimer = document.getElementById('countdown');
+        function setupToggleSwitchListener(phonenum, switchId, countdownId, displayId, reconnectId) {
+            var toggleSwitch = document.querySelector(`[data-phonenum="${phonenum}"]`);
+            var countdownTimer = document.getElementById(countdownId);
+            var toggleDisplay = document.getElementById(displayId);
+            var reconnectMessage = document.getElementById(reconnectId);
 
             toggleSwitch.addEventListener('change', function() {
-                sendToggleStateToServer(this.checked, () => {
-                    toggleSwitch.disabled = true;
-                    countdownTimer.style.display = 'inline'; // 카운트다운을 보이게 합니다.
-                    startCountdown(35); // 10초 카운트다운 시작
+                const initialState = this.checked;
+                sendToggleStateToServer(phonenum, this.checked, (success) => {
+                    if (success) {
+                        toggleSwitch.disabled = true;
+                        countdownTimer.style.display = 'inline';
+                        startCountdown(35, countdownTimer, toggleSwitch);
+                    } else {
+                        toggleSwitch.checked = initialState; // 장치 상태가 변경되지 않으면 토글을 되돌림
+                    }
                 });
             });
 
-            function startCountdown(duration) {
+            function startCountdown(duration, countdownTimer, toggleSwitch) {
                 var timer = duration, minutes, seconds;
                 var countdownInterval = setInterval(function () {
                     minutes = parseInt(timer / 60, 10);
                     seconds = parseInt(timer % 60, 10);
-
                     minutes = minutes < 10 ? "0" + minutes : minutes;
                     seconds = seconds < 10 ? "0" + seconds : seconds;
-
                     countdownTimer.textContent = minutes + ":" + seconds;
-
                     if (--timer < 0) {
                         timer = duration;
                         clearInterval(countdownInterval);
                         toggleSwitch.disabled = false;
-                        countdownTimer.style.display = 'none'; // 카운트다운을 숨깁니다.
+                        countdownTimer.style.display = 'none';
                     }
                 }, 1000);
             }
-        }
 
-        function sendToggleStateToServer(state, callback) {
-            var xhr = new XMLHttpRequest();
-            xhr.open('POST', '/update_toggle_state', true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-
-            xhr.onload = function() {
-                if (xhr.status === 200) {
-                    console.log('Toggle state updated successfully');
-                } else {
-                    console.error('Error updating toggle state');
-                }
-                callback(); // 서버 응답 후 콜백 함수 실행
-            };
-
-            xhr.onerror = function() {
-                console.error('Network error');
-                callback(); // 네트워크 오류 시 콜백 함수 실행
-            };
-
-            xhr.send(JSON.stringify({ toggleState: state, phonenum: 37441272 }));
-        }
-
-        window.addEventListener('load', setupToggleSwitchListener);
-
-        document.addEventListener("DOMContentLoaded", function() {
-            const toggleDisplay = document.getElementById('toggleDisplay'); // Get the display element
-            const toggleSwitch = document.querySelector('[data-phonenum="37441272"]'); // 특정 전화번호 필터링
-
-            // Function to fetch toggle state from server
-            function fetchToggleState() {
-                fetch(`/toggle_state?phonenum=37441272`)
+            setInterval(() => {
+                fetch(`/toggle_state?phonenum=${phonenum}`)
                     .then(response => response.json())
                     .then(data => {
                         const toggleState = data.toggleState;
-                        toggleDisplay.textContent = toggleState;  // Update display based on state
-                        toggleSwitch.checked = toggleState === 'ON'; // Update switch based on state
+                        toggleDisplay.textContent = toggleState;
+                        toggleSwitch.checked = toggleState === 'ON';
+                        if (data.reconnectMessage) {
+                            reconnectMessage.textContent = data.reconnectMessage;
+                            reconnectMessage.style.display = 'block';
+                        } else {
+                            reconnectMessage.textContent = '';
+                            reconnectMessage.style.display = 'none';
+                        }
                     })
                     .catch(error => console.error('Error fetching toggle state:', error));
-            }
+            }, 5000);
+        }
 
-            // Fetch toggle state immediately when the page loads
-            fetchToggleState();
+        function sendToggleStateToServer(phonenum, state, callback) {
+            var xhr = new XMLHttpRequest();
+            xhr.open('POST', '/update_toggle_state', true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log('Toggle state updated successfully');
+                    callback(true);
+                } else {
+                    console.error('Error updating toggle state');
+                    callback(false);
+                }
+            };
+            xhr.onerror = function() {
+                console.error('Network error');
+                callback(false);
+            };
+            xhr.send(JSON.stringify({ toggleState: state, phonenum: phonenum }));
+        }
 
-            // Set an interval to fetch toggle state every 5 seconds
-            setInterval(fetchToggleState, 5000);
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchToggleState(37441272, 'toggleDisplay1', 'toggle-switch1', 'reconnectMessage1');
+            fetchToggleState(37441273, 'toggleDisplay2', 'toggle-switch2', 'reconnectMessage2');
+            fetchToggleState(37475978, 'toggleDisplay3', 'toggle-switch3', 'reconnectMessage3');
         });
 
-        // 사용자 활동 감지 및 페이지 새로고침 기능 추가
+        function fetchToggleState(phonenum, displayId, switchId, reconnectId) {
+            const toggleDisplay = document.getElementById(displayId);
+            const toggleSwitch = document.querySelector(`[data-phonenum="${phonenum}"]`);
+            const reconnectMessage = document.getElementById(reconnectId);
+            fetch(`/toggle_state?phonenum=${phonenum}`)
+                .then(response => response.json())
+                .then(data => {
+                    const toggleState = data.toggleState;
+                    toggleDisplay.textContent = toggleState;
+                    toggleSwitch.checked = toggleState === 'ON';
+                    if (data.reconnectMessage) {
+                        reconnectMessage.textContent = data.reconnectMessage;
+                        reconnectMessage.style.display = 'block';
+                    } else {
+                        reconnectMessage.textContent = '';
+                        reconnectMessage.style.display = 'none';
+                    }
+                })
+                .catch(error => console.error('Error fetching toggle state:', error));
+        }
+
         let activityTimeout;
         function resetActivityTimeout() {
             clearTimeout(activityTimeout);
             activityTimeout = setTimeout(function() {
-                location.reload(); // 일정 시간 동안 활동이 없으면 페이지를 새로고침
-            }, 2 * 60 * 1000); // 10분 (600000밀리초) 동안 활동이 없으면 새로고침
+                location.reload();
+            }, 2 * 60 * 1000);
         }
 
         document.addEventListener('mousemove', resetActivityTimeout);
@@ -126,7 +168,6 @@
 
         window.onload = resetActivityTimeout;
 
-        // 터치 이벤트 처리 추가
         document.addEventListener('DOMContentLoaded', function() {
             var cards = document.querySelectorAll('.card');
 
@@ -138,7 +179,7 @@
                 card.addEventListener('touchend', function() {
                     setTimeout(function() {
                         card.classList.remove('touch');
-                    }, 200); // 200ms 후 touch 클래스 제거
+                    }, 200);
                 });
             });
 
@@ -153,10 +194,11 @@
 </head>
 <body>
     <div class="card-container">
+        <!-- 첫 번째 장비 카드 -->
         <div class="card">
             <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391272</span>  |  매우먼논  |  아람1
+                <a href="#" class="triangle-btn"></a>
+                <span class="bold-text">37441272</span>  |  문대마을  |  조원
             </div>
             <h2 class="sensor-title">
                 <div class="water-level-icon">
@@ -173,279 +215,89 @@
                     <option value="scheduler">스케줄러</option>
                 </select>
                 <label class="switch">
-                    <input type="checkbox" id="toggle-switch" data-phonenum="37441272"> <!-- 전화번호 필터링을 위한 data-phonenum 추가 -->
+                    <input type="checkbox" id="toggle-switch1" data-phonenum="37441272">
                     <span class="slider round">
-                        <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                        <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
+                        <span class="on">물꼬 열림</span>
+                        <span class="off">물꼬 닫힘</span>
                     </span>
-                    <span id="countdown" style="display: none;">00:35</span>
-                    <div id="toggleDisplay" style="position: absolute; top: 35px; left: 92px; font-size: 8px;">
-                        <!-- Toggle state will be displayed here -->
-                    </div>
+                    <span id="countdown1" class="countdown">00:35</span>
+                    <div id="toggleDisplay1" style="position: absolute; top: 35px; left: 92px; font-size: 8px;"></div>
                 </label>
             </div>
             <div class="card-end">
-                <span class="additional-info"> 6월 10일 이앙   |    아람    |    예상 출수기(8월 19일) + 3day </span>
+                <span class="additional-info"> 6월 10일 이앙   |    조원    |    예상 출수기(8월 6일) + 3day </span>
             </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391890</span>  |  원산마을  |  조원늦게1
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">2.3cm | 7.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto" selected>자동</option>
-                  <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 20일 이앙   |    조원    |    예상 출수기(8월 11일) </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391820</span>  |  문대마을  |  아람2
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">3.4cm | 7.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto">자동</option>
-                  <option value="scheduler" selected>스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  매우먼논  |  아람3
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">3.0cm | 5.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto">자동</option>
-                  <option value="scheduler" selected>스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람4
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">3.1cm | 5.2cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto"selected>자동</option>
-                  <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람5
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">3.0cm | 5.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto"selected>자동</option>
-                  <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 14일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  매우먼논  |  아람6
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">2.4cm | 7.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto">자동</option>
-                  <option value="scheduler"selected>스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 14일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람7
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">4.2cm | 6.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto">자동</option>
-                  <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
-        </div>
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a> <!-- 삼각형 모양의 버튼 추가 -->
-                <span class="bold-text">KGJ33391867</span>  |  중촌마을  |  아람8
-            </div>
-            <h2 class="sensor-title">
-              <div class="water-level-icon">
-                <div class="water"></div>
-              </div>
-              <span class="measurement">2.2cm | 4.0cm</span>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
-                  <option value="manual">수동</option>
-                  <option value="auto">자동</option>
-                  <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch">
-                    <span class="slider round">
-                      <span class="on">물꼬 열림</span> <!-- 여기에 열림 텍스트 추가 -->
-                      <span class="off">물꼬 닫힘</span> <!-- 여기에 닫힘 텍스트 추가 -->
-                    </span>
-                </label>
-
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 6월 15일 이앙   |    아람    |    예상 출수기(8월 20일) + 2day </span> 
-            </div>
-
         </div>
         
+        <!-- 두 번째 장비 카드 -->
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a>
+                <span class="bold-text">37441273</span>  |  원산마을  |  아람
+            </div>
+            <h2 class="sensor-title">
+                <div class="water-level-icon">
+                    <div class="water"></div>
+                </div>
+                <span id="data2">0.0</span>cm | 5.0cm
+                <div id="data-container"></div>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode2" id="mode2">
+                    <option value="manual">수동</option>
+                    <option value="auto" selected>자동</option>
+                    <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch2" data-phonenum="37441273">
+                    <span class="slider round">
+                        <span class="on">물꼬 열림</span>
+                        <span class="off">물꼬 닫힘</span>
+                    </span>
+                    <span id="countdown2" class="countdown">00:35</span>
+                    <div id="toggleDisplay2" style="position: absolute; top: 35px; left: 92px; font-size: 8px;"></div>    
+                </label>
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 6월 10일 이앙   |    아람    |    예상 출수기(8월 23일) </span>
+            </div>
+        </div>
+        
+        <!-- 세 번째 장비 카드 -->
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a>
+                <span class="bold-text">37475978</span>  |  갈전마을  |  경원
+            </div>
+            <h2 class="sensor-title">
+                <div class="water-level-icon">
+                    <div class="water"></div>
+                </div>
+                <span id="data3">0.0</span>cm | 5.0cm
+                <div id="data-container"></div>
+            </h2>
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode3" id="mode3">
+                    <option value="manual">수동</option>
+                    <option value="auto">자동</option>
+                    <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch3" data-phonenum="37475978">
+                    <span class="slider round">
+                        <span class="on">물꼬 열림</span>
+                        <span class="off">물꼬 닫힘</span>
+                    </span>
+                    <span id="countdown3" class="countdown">00:35</span>
+                    <div id="toggleDisplay3" style="position: absolute; top: 35px; left: 92px; font-size: 8px;"></div>
+                </label>
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 7월 1일 이앙   |    경원    |    예상 출수기(9월 1일) </span>
+            </div>
+        </div>
     </div>
-    </body>
+</body>
 </html>

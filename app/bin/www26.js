@@ -181,73 +181,7 @@ var server = net.createServer(function(socket) {
     socket.setMaxListeners(20);
 
     socket.on('data', function(data) {
-        const receivedData = data.toString();
-        console.log('Received raw data from client:', data); // raw data 확인
-        console.log('Received data from client:', receivedData);
-
-        // 마지막 메시지 수신 시간을 기록
-        lastMessageReceivedTimes[clientKey] = Date.now();
-
-        if (receivedData === 'OCK' || receivedData === 'FCK') {
-            console.log(`${receivedData} received from client.`);
-            if (clients[clientKey] && clients[clientKey].timer) {
-                clearTimeout(clients[clientKey].timer);
-                clients[clientKey].timer = null;
-                console.log('Timer cancelled, valid response received within timeout.');
-            }
-            commandReceiveTimes[clientKey] = Date.now(); // OCK 또는 FCK 받은 시간 기록
-            updateValveState(receivedData === 'OCK' ? 'ON' : 'OFF', clients[clientKey].phonenum);
-            return;
-        }
-
-        if (receivedData === 'OND' || receivedData === 'FND') {
-            console.log(`${receivedData} received from client.`);
-            clearRetryTimer(clientKey);
-            const timeElapsed = Date.now() - commandReceiveTimes[clientKey]; // 경과 시간 계산
-            console.log(`Timeout cleared: ${clientKey} received ${receivedData} after ${timeElapsed}ms.`);
-
-            if (timeElapsed <= 29000) {
-                console.log(`Resending command to client ${clientKey} as response time was ${timeElapsed}ms.`);
-                const toggleStateString = globalToggleStates[clients[clientKey].phonenum] === 'ON' ? 'AD' : 'HZ';
-                
-                // 1초 후에 명령을 재전송
-                setTimeout(() => {
-                    resendToggleCommand(clients[clientKey], toggleStateString, clientKey, clients[clientKey].phonenum);
-                }, 1000);
-            }
-            return;
-        }
-
-        if (!receivedData || receivedData.trim() === "") {
-            console.error('Received invalid or empty data:', receivedData);
-            return;
-        }
-
-        const dataParts = receivedData.split('!');
-        const waterdata = dataParts[0];
-        const phonenum = dataParts.length > 1 ? parseInt(dataParts[1]) : null;
-
-        console.log(`Parsed waterdata: ${waterdata}, phonenum: ${phonenum}`);
-
-        if (phonenum) {
-            clients[clientKey].phonenum = phonenum; // 클라이언트에 전화번호 할당
-            const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' '); // 현재 시간을 MySQL 형식으로 변환
-            console.log('Inserting data into MySQL:', { waterdata, phonenum, globalToggleStates: globalToggleStates[phonenum], created_at: createdAt });
-
-            connection.query(
-                'INSERT INTO waterm (waterdata, created_at, phonenum, valve_of) VALUES (?, ?, ?, ?)', 
-                [waterdata, createdAt, phonenum, globalToggleStates[phonenum]], 
-                (err, results) => {
-                    if (err) {
-                        console.error('Error inserting data into MySQL:', err);
-                    } else {
-                        console.log('Data successfully inserted into MySQL database');
-                    }
-                }
-            );
-        } else {
-            console.error('Phonenum is null or invalid.');
-        }
+        enqueueData({ clientKey, data });
     });
 
     socket.on('timeout', () => {
@@ -292,60 +226,28 @@ server.listen(TCP_PORT, () => {
 app.post('/update_toggle_state', (req, res) => {
     const newToggleState = req.body.toggleState ? 'ON' : 'OFF';
     const phonenum = req.body.phonenum; // 요청에서 전화번호를 가져옵니다.
-    const clientKey = Object.keys(clients).find(key => clients[key].phonenum == phonenum); // '=='로 수정하여 타입 변환 허용
-    const client = clients[clientKey];
+    const clientKey = Object.keys(clients).find(key => clients[key].phonenum === phonenum);
+    const toggleStateString = newToggleState === 'ON' ? "AD" : "HZ";
 
-    if (client && client.socket) {
-        const toggleStateString = newToggleState === 'ON' ? "AD" : "HZ";
-        client.socket.write(toggleStateString, 'utf8', (err) => {
-            if (err) {
-                console.error('Error sending data to client:', err);
-                return res.status(500).send('Error sending data to client');
-            }
-
-            console.log('Toggle state sent to client successfully');
-            client.socket.once('data', (data) => {
-                const receivedData = data.toString().trim();
-                if (receivedData === 'FCK') {
-                    console.log('FCK received from client:', clientKey);
-                    commandReceiveTimes[clientKey] = Date.now(); // FCK 받은 시간 기록
-                    res.status(200).send('Toggle state updated to OFF and sent to client');
-                    updateValveState('OFF', phonenum);
-                    setRetryTimer(clientKey, 'OFF', 'HZ');
-                } else if (receivedData === 'OCK') {
-                    console.log('OCK received from client:', clientKey);
-                    commandReceiveTimes[clientKey] = Date.now(); // OCK 받은 시간 기록
-                    res.status(200).send('Toggle state updated to ON and sent to client');
-                    updateValveState('ON', phonenum);
-                    setRetryTimer(clientKey, 'ON', 'AD');
-                } else {
-                    console.log('Non-CK message received:', receivedData);
-                    res.status(200).send('Toggle state sent but no CK received');
-                }
-            });
-        });
-    } else {
-        console.error('Client socket not found for key:', clientKey);
-        res.status(404).send('Client not connected');
-    }
+    enqueueCommand({ clientKey, toggleStateString }, (err, state) => {
+        if (err) {
+            return res.status(500).send('Error sending data to client');
+        }
+        if (state === 'ON') {
+            updateValveState('ON', phonenum);
+            res.status(200).send('Toggle state updated to ON and sent to client');
+        } else if (state === 'OFF') {
+            updateValveState('OFF', phonenum);
+            res.status(200).send('Toggle state updated to OFF and sent to client');
+        } else {
+            res.status(200).send('Toggle state sent but no CK received');
+        }
+    });
 });
 
 app.get('/toggle_state', (req, res) => {
     const phonenum = req.query.phonenum;
     res.json({ toggleState: globalToggleStates[phonenum] });
-});
-
-app.get('/status/:device', (req, res) => {
-    const device = req.params.device;
-    let phonenum;
-
-    if (device == 1) {
-        phonenum = 'device1_phonenum';  // 장치 1의 전화번호
-    } else if (device == 2) {
-        phonenum = 'device2_phonenum';  // 장치 2의 전화번호
-    }
-
-    res.json({ status: globalToggleStates[phonenum] });
 });
 
 app.get('/events', (req, res) => {
@@ -431,3 +333,142 @@ process.on('uncaughtException', function (err) {
         server.listen(TCP_PORT, () => console.log(`Server re-listening on port ${TCP_PORT}...`));
     });
 });
+
+// 명령 및 데이터 큐 추가
+const commandQueue = [];
+const dataQueue = [];
+let isProcessing = false;
+
+function enqueueCommand(command, callback) {
+    commandQueue.push({ command, callback });
+    processQueue();
+}
+
+function enqueueData(data) {
+    dataQueue.push(data);
+    processQueue();
+}
+
+function processQueue() {
+    if (isProcessing) return;
+    isProcessing = true;
+
+    if (commandQueue.length > 0) {
+        const { command, callback } = commandQueue.shift();
+        sendCommandToClient(command, callback);
+    } else if (dataQueue.length > 0) {
+        const { clientKey, data } = dataQueue.shift();
+        handleClientData(clientKey, data);
+    }
+
+    isProcessing = false;
+
+    if (commandQueue.length > 0 || dataQueue.length > 0) {
+        setImmediate(processQueue); // 다음 작업을 즉시 처리하도록 설정
+    }
+}
+
+function sendCommandToClient(command, callback) {
+    const clientKey = command.clientKey;
+    const client = clients[clientKey];
+
+    if (client && client.socket) {
+        client.socket.write(command.toggleStateString, 'utf8', (err) => {
+            if (err) {
+                console.error('Error sending data to client:', err);
+                callback(err);
+                return;
+            }
+
+            console.log('Toggle state sent to client successfully');
+            client.socket.once('data', (data) => {
+                const receivedData = data.toString().trim();
+                if (receivedData === 'OCK') {
+                    console.log('OCK received from client:', clientKey);
+                    commandReceiveTimes[clientKey] = Date.now();
+                    callback(null, 'ON');
+                } else if (receivedData === 'FCK') {
+                    console.log('FCK received from client:', clientKey);
+                    commandReceiveTimes[clientKey] = Date.now();
+                    callback(null, 'OFF');
+                } else {
+                    console.log('Non-CK message received:', receivedData);
+                    callback(null, 'UNKNOWN');
+                }
+            });
+        });
+    } else {
+        console.error('Client socket not found for key:', clientKey);
+        callback(new Error('Client not connected'));
+    }
+}
+
+function handleClientData(clientKey, data) {
+    const receivedData = data.toString();
+    console.log('Received raw data from client:', data); // raw data 확인
+    console.log('Received data from client:', receivedData);
+
+    // 마지막 메시지 수신 시간을 기록
+    lastMessageReceivedTimes[clientKey] = Date.now();
+
+    if (receivedData === 'OCK' || receivedData === 'FCK') {
+        console.log(`${receivedData} received from client.`);
+        if (clients[clientKey] && clients[clientKey].timer) {
+            clearTimeout(clients[clientKey].timer);
+            clients[clientKey].timer = null;
+            console.log('Timer cancelled, valid response received within timeout.');
+        }
+        commandReceiveTimes[clientKey] = Date.now(); // OCK 또는 FCK 받은 시간 기록
+        updateValveState(receivedData === 'OCK' ? 'ON' : 'OFF', clients[clientKey].phonenum);
+        return;
+    }
+
+    if (receivedData === 'OND' || receivedData === 'FND') {
+        console.log(`${receivedData} received from client.`);
+        clearRetryTimer(clientKey);
+        const timeElapsed = Date.now() - commandReceiveTimes[clientKey]; // 경과 시간 계산
+        console.log(`Timeout cleared: ${clientKey} received ${receivedData} after ${timeElapsed}ms.`);
+
+        if (timeElapsed <= 29000) {
+            console.log(`Resending command to client ${clientKey} as response time was ${timeElapsed}ms.`);
+            const toggleStateString = globalToggleStates[clients[clientKey].phonenum] === 'ON' ? 'AD' : 'HZ';
+            
+            // 1초 후에 명령을 재전송
+            setTimeout(() => {
+                resendToggleCommand(clients[clientKey], toggleStateString, clientKey, clients[clientKey].phonenum);
+            }, 1000);
+        }
+        return;
+    }
+
+    if (!receivedData || receivedData.trim() === "") {
+        console.error('Received invalid or empty data:', receivedData);
+        return;
+    }
+
+    const dataParts = receivedData.split('!');
+    const waterdata = dataParts[0];
+    const phonenum = dataParts.length > 1 ? parseInt(dataParts[1]) : null;
+
+    console.log(`Parsed waterdata: ${waterdata}, phonenum: ${phonenum}`);
+
+    if (phonenum) {
+        clients[clientKey].phonenum = phonenum; // 클라이언트에 전화번호 할당
+        const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' '); // 현재 시간을 MySQL 형식으로 변환
+        console.log('Inserting data into MySQL:', { waterdata, phonenum, globalToggleStates: globalToggleStates[phonenum], created_at: createdAt });
+
+        connection.query(
+            'INSERT INTO waterm (waterdata, created_at, phonenum, valve_of) VALUES (?, ?, ?, ?)', 
+            [waterdata, createdAt, phonenum, globalToggleStates[phonenum]], 
+            (err, results) => {
+                if (err) {
+                    console.error('Error inserting data into MySQL:', err);
+                } else {
+                    console.log('Data successfully inserted into MySQL database');
+                }
+            }
+        );
+    } else {
+        console.error('Phonenum is null or invalid.');
+    }
+}
