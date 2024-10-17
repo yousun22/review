@@ -340,3 +340,9 @@ body {
     margin-top: 15px; /* 위 요소와의 마진 조절 */
     font-size: 11.2px; /* 작은 화면에서 하단 정보 폰트 크기 줄이기 */
   }
+
+.input-cm {
+    width: 75px; /* Input field 1.5 times larger */
+    font-size: 14px;
+    margin-left: 5px;
+}

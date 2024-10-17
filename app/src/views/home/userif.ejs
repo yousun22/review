@@ -4,29 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>IoT 논물꼬 (Changwon, 1272)_Linchipin</title>
-    <link rel="stylesheet" href="/css/home/toggle.css">
+    <link rel="stylesheet" href="/css/home/toggle.css?v=1.1">  <!-- 스타일 불러오기 -->
     <link href="https://fonts.googleapis.com/css2?family=Nanum+Pen+Script&family=Pacifico&display=swap" rel="stylesheet">
-    <style>
-        .countdown {
-            display: none;
-            position: absolute;
-            top: -20px; /* 토글 스위치 위에 표시 */
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 14px;
-            color: red;
-        }
-        .reconnect-message {
-            color: red;
-            font-weight: bold;
-            font-size: 14px;
-        }
-    </style>
     <script>
         window.addEventListener('load', function () {
-            const phonenum1 = 37441272; // 첫 번째 장비 전화번호
-            const phonenum2 = 37441273; // 두 번째 장비 전화번호
-            const phonenum3 = 37475978; // 세 번째 장비 전화번호
+            const phonenum1 = 37441272;
+            const phonenum2 = 37441273;
+            const phonenum3 = 37475978;
 
             setupEventSource(phonenum1, 'data');
             setupEventSource(phonenum2, 'data2');
@@ -127,6 +111,36 @@
             xhr.send(JSON.stringify({ toggleState: state, phonenum: phonenum }));
         }
 
+        function saveWaterLevelSetting(phonenum, inputId, modeElementId) {
+            const inputElement = document.getElementById(inputId); // 수정: inputId를 사용하여 input 요소 가져오기
+            const waterLevel = parseFloat(inputElement.value).toFixed(1);  // 소수 첫째 자리로 고정
+            const mode = document.getElementById(modeElementId).value;
+
+            // 로그를 추가해 확인
+            console.log(`Saving waterLevel: ${waterLevel} and mode: ${mode} for phonenum: ${phonenum}`);
+
+            // 서버로 데이터 전송
+            fetch('/save_water_level', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phonenum: phonenum,
+                    waterLevel: waterLevel,
+                    mode: mode
+                })
+            }).then(response => {
+                if (response.ok) {
+                    console.log('Water level and mode saved successfully.');
+                } else {
+                    console.error('Failed to save data.');
+                }
+            }).catch(error => {
+                console.error('Error:', error);
+            });
+        }
+
+
+
         document.addEventListener("DOMContentLoaded", function() {
             fetchToggleState(37441272, 'toggleDisplay1', 'toggle-switch1', 'reconnectMessage1');
             fetchToggleState(37441273, 'toggleDisplay2', 'toggle-switch2', 'reconnectMessage2');
@@ -154,46 +168,80 @@
                 .catch(error => console.error('Error fetching toggle state:', error));
         }
 
-        let activityTimeout;
-        function resetActivityTimeout() {
-            clearTimeout(activityTimeout);
-            activityTimeout = setTimeout(function() {
-                location.reload();
-            }, 2 * 60 * 1000);
-        }
-
-        document.addEventListener('mousemove', resetActivityTimeout);
-        document.addEventListener('keydown', resetActivityTimeout);
-        document.addEventListener('click', resetActivityTimeout);
-
-        window.onload = resetActivityTimeout;
-
-        document.addEventListener('DOMContentLoaded', function() {
-            var cards = document.querySelectorAll('.card');
-
-            cards.forEach(function(card) {
-                card.addEventListener('touchstart', function() {
-                    removeTouchClass();
-                    card.classList.add('touch');
-                });
-                card.addEventListener('touchend', function() {
-                    setTimeout(function() {
-                        card.classList.remove('touch');
-                    }, 200);
-                });
-            });
-
-            function removeTouchClass() {
-                cards.forEach(function(card) {
-                    card.classList.remove('touch');
-                });
-            }
+        document.addEventListener("DOMContentLoaded", function() {
+            fetchWaterLevelAndMode(37441272, 'mode1', 'water-input1');
+            fetchWaterLevelAndMode(37441273, 'mode2', 'water-input2');
+            fetchWaterLevelAndMode(37475978, 'mode3', 'water-input3');
         });
 
+        // 수위 및 모드 가져오기 함수
+        function fetchWaterLevelAndMode(phonenum, modeElementId, waterInputId) {
+            fetch(`/get_water_level_and_mode?phonenum=${phonenum}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 모드 설정
+                    const modeElement = document.getElementById(modeElementId);
+                    const waterInput = document.getElementById(waterInputId);
+
+                    modeElement.value = data.mode;
+
+                    // 수위 설정
+                    console.log(`Setting water level for ${phonenum}: ${data.waterLevel}`); // 수위 값 로그 출력
+                    waterInput.value = data.waterLevel || 0; // 수위 값이 없다면 0으로 설정
+                })
+                .catch(error => {
+                    console.error('Error fetching water level and mode:', error);
+                });
+        }
     </script>
 </head>
 <body>
     <div class="card-container">
+        <div class="card">
+            <div class="card-header">
+                <a href="#" class="triangle-btn"></a>
+                <span class="bold-text">37475978</span>  |  갈전마을  |  경원
+            </div>
+
+            <div class="small-text">
+                <span class="current-water-label">현 재 수 위</span>
+                <span class="set-water-label">설 정 수 위</span>
+            </div>            
+            
+            <h2 class="sensor-title">
+                <div class="water-level-icon">
+                    <div class="water"></div>
+                </div>
+                <span id="data3">0.0</span>
+                <span class="separator">|</span>
+                <input type="number" id="water-input3" class="input-cm" value="5.0" />
+                <span class="cm-text">cm</span>
+                <button class="save-btn" onclick="saveWaterLevelSetting(37475978, 'water-input3', 'mode3')">저장</button>
+                <div id="data-container"></div>
+
+            </h2>
+
+            <div class="mode-selection">
+                <span class="operation-mode">모드:</span>
+                <select name="mode3" id="mode3">
+                    <option value="manual">수동</option>
+                    <option value="auto">자동</option>
+                    <option value="scheduler">스케줄러</option>
+                </select>
+                <label class="switch">
+                    <input type="checkbox" id="toggle-switch3" data-phonenum="37475978">
+                    <span class="slider round">
+                        <span class="on">물꼬 열림</span>
+                        <span class="off">물꼬 닫힘</span>
+                    </span>
+                    <span id="countdown3" class="countdown">00:35</span>
+                    <div id="toggleDisplay3" style="position: absolute; top: 35px; left: 92px; font-size: 8px;"></div>
+                </label>
+            </div>
+            <div class="card-end">
+                <span class="additional-info"> 7월 1일 이앙   |    경원    |    예상 출수기(9월 1일) </span>
+            </div>
+        </div>
         <!-- 첫 번째 장비 카드 -->
         <div class="card">
             <div class="card-header">
@@ -204,12 +252,17 @@
                 <div class="water-level-icon">
                     <div class="water"></div>
                 </div>
-                <span id="data">0.0</span>cm | 5.0cm
+                <span id="data">0.0</span> 
+                <span class="separator">|</span>  <!-- 여기서 | 기호 추가 -->
+                <input type="number" id="water-input1" class="input-cm" value="5.0" step="0.1" min="0" max="100" />
+                <span class="cm-text">cm</span>  <!-- "cm" 단위 추가 -->
+                <button class="save-btn" onclick="saveWaterLevelSetting(37475978, 'water-input1', 'mode1')">저장</button>
                 <div id="data-container"></div>
+
             </h2>
             <div class="mode-selection">
                 <span class="operation-mode">모드:</span>
-                <select name="mode" id="mode">
+                <select name="mode" id="mode1">
                     <option value="manual">수동</option>
                     <option value="auto">자동</option>
                     <option value="scheduler">스케줄러</option>
@@ -239,14 +292,18 @@
                 <div class="water-level-icon">
                     <div class="water"></div>
                 </div>
-                <span id="data2">0.0</span>cm | 5.0cm
+                <span id="data2">0.0</span>
+                <span class="separator">|</span>  <!-- 여기서 | 기호 추가 -->
+                <input type="number" id="water-input2" class="input-cm" value="5.0" step="0.1" min="0" max="100" />
+                <span class="cm-text">cm</span>  <!-- "cm" 단위 추가 -->
+                <button class="save-btn" onclick="saveWaterLevelSetting(37475978, 'water-input2', 'mode2')">저장</button>
                 <div id="data-container"></div>
             </h2>
             <div class="mode-selection">
                 <span class="operation-mode">모드:</span>
                 <select name="mode2" id="mode2">
                     <option value="manual">수동</option>
-                    <option value="auto" selected>자동</option>
+                    <option value="auto">자동</option>
                     <option value="scheduler">스케줄러</option>
                 </select>
                 <label class="switch">
@@ -265,39 +322,7 @@
         </div>
         
         <!-- 세 번째 장비 카드 -->
-        <div class="card">
-            <div class="card-header">
-                <a href="#" class="triangle-btn"></a>
-                <span class="bold-text">37475978</span>  |  갈전마을  |  경원
-            </div>
-            <h2 class="sensor-title">
-                <div class="water-level-icon">
-                    <div class="water"></div>
-                </div>
-                <span id="data3">0.0</span>cm | 5.0cm
-                <div id="data-container"></div>
-            </h2>
-            <div class="mode-selection">
-                <span class="operation-mode">모드:</span>
-                <select name="mode3" id="mode3">
-                    <option value="manual">수동</option>
-                    <option value="auto">자동</option>
-                    <option value="scheduler">스케줄러</option>
-                </select>
-                <label class="switch">
-                    <input type="checkbox" id="toggle-switch3" data-phonenum="37475978">
-                    <span class="slider round">
-                        <span class="on">물꼬 열림</span>
-                        <span class="off">물꼬 닫힘</span>
-                    </span>
-                    <span id="countdown3" class="countdown">00:35</span>
-                    <div id="toggleDisplay3" style="position: absolute; top: 35px; left: 92px; font-size: 8px;"></div>
-                </label>
-            </div>
-            <div class="card-end">
-                <span class="additional-info"> 7월 1일 이앙   |    경원    |    예상 출수기(9월 1일) </span>
-            </div>
-        </div>
+        
     </div>
 </body>
 </html>

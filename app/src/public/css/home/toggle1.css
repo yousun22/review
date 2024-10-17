@@ -296,5 +296,10 @@ body {
     color: #333; /* 글자 색상 조절 */
     margin-top: 15px; /* 위 요소와의 마진 조절 */
   }
-  
+.input-cm {
+    width: 75px; /* Input field 1.5 times larger */
+    font-size: 14px;
+    margin-left: 5px;
+}
+
   
