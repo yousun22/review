@@ -4,7 +4,7 @@
   "description": "백앤드 맛보기 강의 리뷰",
   "main": "app.js",
   "bin": {
-    "lecture-learn-review1": "bin/www39.js"
+    "lecture-learn-review1": "bin/www40.js"
   },
   "dependencies": {
     "accepts": "^1.3.8",
@@ -94,7 +94,7 @@
     "winston": "^3.11.0"
   },
   "scripts": {
-    "start": "node ./bin/www39.js",
+    "start": "node ./bin/www40.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
