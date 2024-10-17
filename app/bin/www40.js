@@ -10,7 +10,7 @@ const fs = require('fs');
 const path = require('path');
 
 const PORT = process.env.PORT || 3000;
-const TCP_PORT = 61;
+const TCP_PORT = 8080;
 
 let retryTimeout = 35000; // 35초 후 재시도
 const pingInterval = 1 * 60 * 1000; // 1분
