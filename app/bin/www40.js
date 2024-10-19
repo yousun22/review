@@ -494,7 +494,7 @@ function sendCommandToClient(command, callback) {
 
 function handleClientData(clientKey, data) {
     const receivedData = data.toString().trim();
-    console.log('Received raw data from client:', data);
+    console.log(`Raw data received from clientKey ${clientKey}: ${data}`);
     console.log('Received data from client:', receivedData);
 
     lastMessageReceivedTimes[clientKey] = Date.now();
@@ -558,6 +558,11 @@ function handleClientData(clientKey, data) {
 
     console.log(`Parsed waterdata: ${waterdata}, phonenum: ${phonenum}`);
 
+    if (!phonenum || phonenum === null || isNaN(phonenum)) {
+        console.error(`Invalid phonenum: ${phonenum}`);
+        return;
+    }
+
     if (phonenum && clients[clientKey]) {
         clients[clientKey].phonenum = phonenum;
 
@@ -573,6 +578,7 @@ function handleClientData(clientKey, data) {
         const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
         // 수신된 waterdata와 함께 가장 최근의 water_level_setting과 mode를 저장
+        console.log(`Inserting data: waterdata=${waterdata}, phonenum=${phonenum}, createdAt=${createdAt}`);
         pool.query(
             'INSERT INTO waterm (waterdata, created_at, phonenum, valve_of, water_level_setting, mode) VALUES (?, ?, ?, ?, ?, ?)',
             [waterdata, createdAt, phonenum, globalToggleStates[phonenum], settings.waterLevel, settings.mode],
@@ -678,6 +684,7 @@ function sendCommand(phonenum, command) {
         }
     });
 }
+
 
 // 서버 시작
 startServer();
