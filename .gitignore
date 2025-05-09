@@ -129,5 +129,5 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
-src/config/5grain.json
-src/config/sfkorea.json
+app/src/config/5grains.json
+app/src/config/sfkorea.json
