@@ -3,16 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>사물인터넷 물꼬 - 5grains</title>
-    <link rel="stylesheet" href="/css/home/toggle4.css">
+    <title>사물인터넷 물꼬 - sfkorea</title>
+    <link rel="stylesheet" href="/css/home/toggle5.css">
 </head>
+
 <body>
     <div class="card-container">
         <% devices.forEach(device => { %>
             <div class="card" id="card-<%= device.hashNum %>">
                 <div class="card-header">
                     <div class="loca-id"><%= device.loca_id %></div>
-                    <div class="location"><%= device.location %></div>
+                    <div class="location">
+                        <%= device.location %>
+                        <a href="https://map.naver.com/p/search/<%= encodeURIComponent(device.location) %>" 
+                            target="_blank" 
+                            title="네이버지도에서 보기"
+                            style="margin-left: -2px; text-decoration: none;">
+                            🌐
+                         </a>
+                    </div>
                 </div>
                 <div class="water-level">
                     <span id="data-<%= device.hashNum %>">
@@ -27,7 +36,14 @@
                 </div>
             </div>
         <% }); %>
+        <div class="page-footer">
+            <img src="/images/marklogo.svg" alt="경남도 로고" class="footer-logo">
+            <span class="footer-text">경상남도농업기술원</span>
+        </div>
+    
     </div>
+    <!-- 카드 컨테이너 끝난 후 -->
+
     <div id="device-data" data-devices='<%- JSON.stringify(devices).replace(/'/g, "&#39;") %>'></div> 
 
     <script>
@@ -59,6 +75,7 @@
             if (!btn) return;
     
             const state = valveStates[hashNum];
+            const lockState = valveLockStates[hashNum] || false; // ✅ undefined 방지
             btn.textContent = state === "OPEN" ? "닫기" : "열기";
             btn.classList.toggle("open-btn", state !== "OPEN");
             btn.classList.toggle("close-btn", state === "OPEN");
@@ -105,6 +122,7 @@
                         } else {
                             clearInterval(intervalId);
                             timerSpan.innerText = '';
+                            //console.log('35초 끝났다. 복원 시도:', hashNum);
                             valveLockStates[hashNum] = false;
                             updateValveButton(hashNum);
                             zeroBtn.disabled = false; // ✅ 복원
@@ -138,13 +156,14 @@
             const levelRaw = Number(data.waterLevel || 0);
             const zeroPoint = Number(data.zeroPoint || 0) / 100;
 
-            //let level = levelRaw - zeroPoint;
-            let level;
-            if (levelRaw < zeroPoint) {
-                level = MAX_LEVEL - (zeroPoint - levelRaw);  // → 한 바퀴 돌아온 것
-            } else {
-                level = levelRaw - zeroPoint;
-            }
+            let level = levelRaw - zeroPoint;
+
+            // 🌀 wrap-around 처리
+            if (level < -MAX_LEVEL / 2) {
+                level += MAX_LEVEL;
+            } else if (level > MAX_LEVEL / 2) {
+                level -= MAX_LEVEL;
+}
 
             if (waterLevelSpan) {
                 waterLevelSpan.innerText = isNaN(level) ? "0.0" : level.toFixed(1);

@@ -28,6 +28,16 @@ const output = {
         logger.info(`GET /userifse 304 "데이터 화면으로 이동"`);
         res.render("home/userifse");
     },
+
+    grains: (req, res) => {
+        logger.info(`GET /5grains 304 "5grains 화면으로 이동"`);
+        res.render("home/5grains");
+    },
+
+    grains: (req, res) => {
+        logger.info(`GET /sfkorea 304 "sfkorea 화면으로 이동"`);
+        res.render("home/sfkorea");
+    },
 };
 
 const process = {

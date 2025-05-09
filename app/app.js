@@ -1,62 +1,41 @@
 "use strict";
 
-// 모듈
 const express = require("express");
 const bodyParser = require("body-parser");
-
+const getDb = require('./src/config/db');
 const dotenv = require("dotenv");
 dotenv.config();
 
 const app = express();
-
-// 로그 설정
-const accessLogStream = require("./src/config/log");
-
-// 라우팅
+const accessLogStream = require("./src/config/logs");
 const home = require("./src/routes/home");
+app.use('/images', express.static(`${__dirname}/src/images`));
 
-// 앱 세팅
 app.set("views", "./src/views");
 app.set("view engine", "ejs");
 
-// 정적 파일 설정
+// ✅ 백틱 누락 수정
 app.use(express.static(`${__dirname}/src/public`));
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
-// 로그인 기능 제거 - 세션 설정, 인증 미들웨어, 사용자 인터페이스 라우트 제거
-// app.use(session({
-//     secret: 'your-secret-key',
-//     resave: false,
-//     saveUninitialized: true
-// }));
-
-// 로그인 기능 제거 - 인증 미들웨어 및 사용자 인터페이스 라우트 제거
-// const authMiddleware = require('./src/middleware/auth');
-// const userifRoutes = require('./src/routes/home/userif');
-// app.use("/userif", authMiddleware, userifRoutes); 
-
-// 라우트 설정
 app.use("/", home);
 
-// API 엔드포인트
+// API 예제
 app.get('/api/getObj2', (req, res) => {
-    // "obj2" 데이터가 정의되어 있다고 가정
-    res.json(obj2);
+    res.json(obj2); // obj2가 어디선가 정의되어 있어야 합니다.
 });
 
 app.get('/api/getLatestData', (req, res) => {
-    // 데이터베이스에서 최신 데이터를 가져옴
-    // 예제 데이터로 대체
     const latestData = {
         waterm: '데이터베이스에서 가져온 값',
-        created_at: new Date().toLocaleString(), // 현재 시간을 사용하거나 데이터베이스에서 가져온 시간 사용
+        created_at: new Date().toLocaleString(),
     };
     res.json(latestData);
 });
 
 app.get('/test', (req, res) => {
-    connection.query('SELECT waterdata FROM waterm ORDER BY created_at DESC LIMIT 1', (err, results) => {
+    getDb().query('SELECT waterdata FROM waterm ORDER BY created_at DESC LIMIT 1', (err, results) => {
         if (err) {
             console.error('Error retrieving data from MySQL: ' + err);
             return res.status(500).send('Error retrieving data from MySQL');
@@ -64,20 +43,64 @@ app.get('/test', (req, res) => {
 
         if (results.length > 0) {
             const latestData = results[0].waterdata;
-            const html = `<html>
-              <head>
-                <title>데이터 표시 예제</title>
-              </head>
+            const html = `
+              <html>
+              <head><title>데이터 표시 예제</title></head>
               <body>
                 <h1>최신 데이터:</h1>
                 <p>${latestData}</p>
               </body>
-            </html>`;
-
+              </html>
+            `;
             res.send(html);
         } else {
             res.send('No data found in the database.');
         }
+    });
+});
+
+app.get("/events/all", (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+
+    const sendAllDeviceData = () => {
+        const sql = `
+        SELECT w1.hashNum, w1.valve_of, w1.waterdata, w1.zero_point
+        FROM waterm w1
+        JOIN (
+            SELECT hashNum, MAX(created_at) AS max_created
+            FROM waterm
+            GROUP BY hashNum
+        ) w2 ON w1.hashNum = w2.hashNum AND w1.created_at = w2.max_created
+            `;
+
+        getDb().query(sql, (err, results) => {
+            if (err) {
+                console.error("DB 오류:", err);
+                res.write(`event: error\ndata: ${JSON.stringify({ error: "DB_ERROR" })}\n\n`);
+                return;
+            }
+
+            const dataMap = {};
+            results.forEach(row => {
+                dataMap[row.hashNum] = {
+                    waterLevel: (row.waterdata / 100).toFixed(1),
+                    zeroPoint: (row.zero_point || 0), // 🟡 추가!
+                    actualValveState: row.valve_of === 'ON' ? "OPEN" : "CLOSED"
+                };
+            });
+
+            res.write(`data: ${JSON.stringify(dataMap)}\n\n`);
+        });
+    };
+
+    const intervalId = setInterval(sendAllDeviceData, 5000);
+    sendAllDeviceData();
+
+    req.on("close", () => {
+        clearInterval(intervalId);
+        res.end();
     });
 });
 

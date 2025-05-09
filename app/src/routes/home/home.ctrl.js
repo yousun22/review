@@ -2,6 +2,8 @@
 
 const logger = require("../../config/logger");
 const User = require("../../models/User");
+const fs = require("fs");
+const path = require("path");
 
 const output = {
     home: (req, res) => {
@@ -28,6 +30,42 @@ const output = {
         logger.info(`GET /userifse 304 "데이터 화면으로 이동"`);
         res.render("home/userifse");
     },
+
+    grains: (req, res) => {
+        logger.info(`GET /5grains 304 "5grains 화면으로 이동"`);
+
+        // ✅ 항상 최신 JSON을 읽음
+        const jsonPath = path.resolve(__dirname, "../../config/5grains.json");
+        let devices = [];
+
+        try {
+            const rawData = fs.readFileSync(jsonPath, "utf-8");
+            devices = JSON.parse(rawData);
+            console.log("📦 현재 불러온 devices 목록:", devices.map(d => d.hashNum));
+        } catch (err) {
+            console.error("❌ 5grains.json 파일을 읽는 중 오류 발생:", err);
+        }
+
+        res.render("home/5grains", { devices });
+    },
+
+    sfkorea: (req, res) => {
+        logger.info(`GET /sfkorea 304 "sfkorea 화면으로 이동"`);
+
+        // ✅ 항상 최신 JSON을 읽음
+        const jsonPath = path.resolve(__dirname, "../../config/sfkorea.json");
+        let devices = [];
+
+        try {
+            const rawData = fs.readFileSync(jsonPath, "utf-8");
+            devices = JSON.parse(rawData);
+            console.log("📦 현재 불러온 devices 목록:", devices.map(d => d.hashNum));
+        } catch (err) {
+            console.error("❌ sfkorea.json 파일을 읽는 중 오류 발생:", err);
+        }
+
+        res.render("home/sfkorea", { devices });
+    },
 };
 
 const process = {
@@ -42,6 +80,7 @@ const process = {
         log(response, url);
         return res.status(url.status).json(response);
     },
+
     register: async (req, res) => {
         const user = new User(req.body);
         const response = await user.register();

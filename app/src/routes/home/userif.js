@@ -1,6 +1,8 @@
 const express = require('express');
 const bcrypt = require('bcrypt');
 const users = require('../../config/users');
+const devices = require('../config/5grains.json'); // 경로 맞게 조정
+const devices2 = require('../config/sfkorea.json'); // 경로 맞게 조정
 const router = express.Router();
 
 // 로그인 페이지 라우트
@@ -44,5 +46,15 @@ router.get('/logout', (req, res) => {
 router.get('/', (req, res) => {
     res.render('home/userif'); // userif.ejs 파일 렌더링
 });
+
+
+router.get('/5grains', (req, res) => {
+    res.render('home/5grains', { devices }); // devices를 넘김
+});
+
+router.get('/sfkorea', (req, res) => {
+    res.render('home/sfkorea', { devices2 }); // ✅ 키를 devices로 맞춰주기
+});
+
 
 module.exports = router;

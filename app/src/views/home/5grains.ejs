@@ -12,7 +12,15 @@
             <div class="card" id="card-<%= device.hashNum %>">
                 <div class="card-header">
                     <div class="loca-id"><%= device.loca_id %></div>
-                    <div class="location"><%= device.location %></div>
+                    <div class="location">
+                        <%= device.location %>
+                        <a href="https://map.naver.com/p/search/<%= encodeURIComponent(device.location) %>" 
+                            target="_blank" 
+                            title="네이버지도에서 보기"
+                            style="margin-left: -2px; text-decoration: none;">
+                            🌐
+                         </a>
+                    </div>
                 </div>
                 <div class="water-level">
                     <span id="data-<%= device.hashNum %>">

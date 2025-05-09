@@ -42,24 +42,24 @@ const pool = mysql.createPool({
 
 // 초기 밸브 상태 가져오기
 function fetchLatestToggleStates() {
-    pool.query('SELECT phonenum, valve_of, water_level_setting, mode FROM (SELECT phonenum, valve_of, water_level_setting, mode, ROW_NUMBER() OVER (PARTITION BY phonenum ORDER BY created_at DESC) as rnum FROM waterm) temp WHERE rnum = 1', 
+    pool.query('SELECT hashNum, valve_of, water_level_setting, mode FROM (SELECT hashNum, valve_of, water_level_setting, mode, ROW_NUMBER() OVER (PARTITION BY hashNum ORDER BY created_at DESC) as rnum FROM waterm) temp WHERE rnum = 1', 
     (err, results) => {
         if (err) {
             console.error('Error retrieving toggle states from MySQL:', err);
         } else if (results.length > 0) {
             results.forEach(result => {
-                const phonenum = result.phonenum;
+                const hashNum = result.hashNum;
                 const valveState = result.valve_of;
                 const waterLevel = result.water_level_setting; // water_level 값도 불러오기
                 let mode = result.mode; // 저장된 모드 값 불러오기
 
-                console.log(`Retrieved valve_of for phonenum ${phonenum} from database:`, valveState);
-                console.log(`Retrieved water_level for phonenum ${phonenum} from database:`, waterLevel);
-                console.log(`Retrieved mode for phonenum ${phonenum} from database:`, mode);
+                console.log(`Retrieved valve_of for hashNum ${hashNum} from database:`, valveState);
+                console.log(`Retrieved water_level for hashNum ${hashNum} from database:`, waterLevel);
+                console.log(`Retrieved mode for hashNum ${hashNum} from database:`, mode);
 
                 // valveState가 'ON' 또는 'OFF'일 경우에만 저장
                 if (valveState === 'ON' || valveState === 'OFF') {
-                    globalToggleStates[phonenum] = valveState;
+                    globalToggleStates[hashNum] = valveState;
                 }
 
                 // mode가 null이면 기본값 'S'(scheduler) 설정
@@ -68,9 +68,9 @@ function fetchLatestToggleStates() {
                 }
 
                 // globalSettings에 waterLevel과 mode를 함께 저장
-                globalSettings[phonenum] = { waterLevel, mode };
+                globalSettings[hashNum] = { waterLevel, mode };
 
-                console.log(`Global settings for phonenum ${phonenum}:`, globalSettings[phonenum]);
+                console.log(`Global settings for hashNum ${hashNum}:`, globalSettings[hashNum]);
             });
             console.log('Initial global toggle states set to:', globalToggleStates);
         } else {
@@ -80,18 +80,13 @@ function fetchLatestToggleStates() {
 }
 
 
-
-app.listen(PORT, () => {
-    logger.info(`${PORT} 포트에서 서버가 가동되었습니다.`);
-});
-
 const clients = {};
 const retryTimers = {};
 const retryStartTimes = {}; // 시작 시간을 저장할 객체
 const commandReceiveTimes = {}; // OCK와 FCK를 받은 시간을 저장할 객체
 const lastMessageReceivedTimes = {}; // 마지막으로 메시지를 받은 시간을 저장할 객체
 
-function resendToggleCommand(client, toggleStateString, clientKey, phonenum) {
+function resendToggleCommand(client, toggleStateString, clientKey, hashNum) {
     if (client && client.socket) {
         client.socket.write(toggleStateString, 'utf8', (err) => {
             if (err) {
@@ -105,12 +100,12 @@ function resendToggleCommand(client, toggleStateString, clientKey, phonenum) {
                 if (receivedData === 'OCK') {
                     console.log('OCK received from client on resend:', clientKey);
                     commandReceiveTimes[clientKey] = Date.now(); // OCK 받은 시간 기록
-                    updateValveState('ON', phonenum);
+                    updateValveState('ON', hashNum);
                     setRetryTimer(clientKey, 'ON', toggleStateString);
                 } else if (receivedData === 'FCK') {
                     console.log('FCK received from client on resend:', clientKey);
                     commandReceiveTimes[clientKey] = Date.now(); // FCK 받은 시간 기록
-                    updateValveState('OFF', phonenum);
+                    updateValveState('OFF', hashNum);
                     setRetryTimer(clientKey, 'OFF', toggleStateString);
                 } else {
                     console.log('Non-CK message received on resend:', receivedData);
@@ -120,9 +115,9 @@ function resendToggleCommand(client, toggleStateString, clientKey, phonenum) {
         });
     } else {
         console.error('Client socket not found for key:', clientKey);
-        reconnectMessages[phonenum] = '장치와 연결 재시도중';
+        reconnectMessages[hashNum] = '장치와 연결 재시도중';
         setTimeout(() => {
-            reconnectMessages[phonenum] = null;
+            reconnectMessages[hashNum] = null;
         }, retryTimeout);
     }
 }
@@ -143,11 +138,11 @@ function setRetryTimer(clientKey, state, toggleStateString) {
                 }
             });
         } else {
-            const phonenum = clients[clientKey] ? clients[clientKey].phonenum : null;
-            if (phonenum) {
-                reconnectMessages[phonenum] = '장치와 연결 재시도중';
+            const hashNum = clients[clientKey] ? clients[clientKey].hashNum : null;
+            if (hashNum) {
+                reconnectMessages[hashNum] = '장치와 연결 재시도중';
                 setTimeout(() => {
-                    reconnectMessages[phonenum] = null;
+                    reconnectMessages[hashNum] = null;
                 }, retryTimeout);
             }
         }
@@ -162,14 +157,14 @@ function clearRetryTimer(clientKey) {
     }
 }
 
-function updateValveState(newState, phonenum) {
-    pool.query('UPDATE waterm SET valve_of = ? WHERE phonenum = ? AND created_at = (SELECT * FROM (SELECT MAX(created_at) FROM waterm WHERE phonenum = ?) AS temp)', 
-    [newState, phonenum, phonenum], (err, result) => {
+function updateValveState(newState, hashNum) {
+    pool.query('UPDATE waterm SET valve_of = ? WHERE hashNum = ? AND created_at = (SELECT * FROM (SELECT MAX(created_at) FROM waterm WHERE hashNum = ?) AS temp)', 
+    [newState, hashNum, hashNum], (err, result) => {
         if (err) {
             console.error('Error updating valve_of in MySQL:', err);
         } else {
-            globalToggleStates[phonenum] = newState;
-            console.log(`밸브 상태가 바뀌었습니다: ${newState} for phonenum ${phonenum}`);
+            globalToggleStates[hashNum] = newState;
+            console.log(`밸브 상태가 바뀌었습니다: ${newState} for hashNum ${hashNum}`);
         }
     });
 }
@@ -179,27 +174,28 @@ function updateValveState(newState, phonenum) {
 let globalSettings = {}; // 각 전화번호별 water_level_setting 및 mode를 저장하는 객체
 
 app.post('/save_water_level', (req, res) => {
-    const phonenum = req.body.phonenum;
+    const hashNum = req.body.hashNum;
     const waterLevel = req.body.waterLevel;
     const mode = req.body.mode;
 
     // 클라이언트에서 전달된 모드를 정확하게 처리
-    const modeValue = mode === 'manual' ? 'M' : mode === 'auto' ? 'A' : 'S'; // 정확한 값으로 변환
-
-    globalSettings[phonenum] = { waterLevel, mode: modeValue };
-    console.log(`Settings saved for phonenum: ${phonenum}`, globalSettings[phonenum]);
+    //const modeValue = mode === 'manual' ? 'M' : mode === 'auto' ? 'A' : 'S'; // 정확한 값으로 변환
+    const modeValue ='M'
+    
+    globalSettings[hashNum] = { waterLevel, mode: modeValue };
+    console.log(`Settings saved for hashNum: ${hashNum}`, globalSettings[hashNum]);
 
     const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
     pool.query(
-        'INSERT INTO waterm (phonenum, valve_of, mode, water_level_setting, created_at) VALUES (?, ?, ?, ?, ?)',
-        [phonenum, globalToggleStates[phonenum], modeValue, waterLevel, createdAt], 
+        'INSERT INTO waterm (hashNum, valve_of, mode, water_level_setting, created_at) VALUES (?, ?, ?, ?, ?)',
+        [hashNum, globalToggleStates[hashNum], modeValue, waterLevel, createdAt], 
         (err, result) => {
             if (err) {
                 console.error('Error saving water level and mode to MySQL:', err);
                 res.status(500).send('Error saving data to database.');
             } else {
-                console.log(`Water level and mode saved successfully for phonenum: ${phonenum}`);
+                console.log(`Water level and mode saved successfully for hashNum: ${hashNum}`);
                 res.status(200).send('Data saved successfully.');
             }
         }
@@ -221,7 +217,7 @@ function startServer() {
             delete clients[clientKey];
         }
 
-        clients[clientKey] = { socket, phonenum: null, timer: null };
+        clients[clientKey] = { socket, hashNum: null, timer: null };
 
         socket.setKeepAlive(true, 60000);
         socket.setTimeout(50000);
@@ -259,12 +255,18 @@ function startServer() {
     server.setMaxListeners(20);
 
     server.on('error', function(err) {
-        console.log('Server error:', err.message);
-        server.close(() => {
-            setTimeout(() => {
-                startServer();
-            }, 10000);  // 10초 후에 다시 시도
-        });
+        if (err.code === 'EADDRINUSE') {
+            console.error(`❌ Port ${TCP_PORT} is already in use. Another server might be running.`);
+            console.error(`💡 해결 방법: 기존 서버 프로세스를 종료하거나 포트를 변경하세요.`);
+            process.exit(1); // 무한 재시작 방지를 위해 강제 종료
+        } else {
+            console.log('Server error:', err.message);
+            server.close(() => {
+                setTimeout(() => {
+                    startServer();
+                }, 10000);  // 10초 후에 다시 시도
+            });
+        }
     });
 
     server.listen(TCP_PORT, () => {
@@ -321,8 +323,8 @@ function sendPingToClients() {
 
 app.post('/update_toggle_state', (req, res) => {
     const newToggleState = req.body.toggleState ? 'ON' : 'OFF';
-    const phonenum = req.body.phonenum; // 요청에서 전화번호를 가져옵니다.
-    const clientKey = Object.keys(clients).find(key => clients[key].phonenum === phonenum);
+    const hashNum = req.body.hashNum; // 요청에서 전화번호를 가져옵니다.
+    const clientKey = Object.keys(clients).find(key => clients[key].hashNum === hashNum);
     const toggleStateString = newToggleState === 'ON' ? "ADADADADAD" : "HZHZHZHZHZ";
 
     if (!clientKey) {
@@ -331,17 +333,17 @@ app.post('/update_toggle_state', (req, res) => {
 
     enqueueCommand({ clientKey, toggleStateString }, (err, state) => {
         if (err) {
-            reconnectMessages[phonenum] = '장치와 연결 재시도중';
+            reconnectMessages[hashNum] = '장치와 연결 재시도중';
             setTimeout(() => {
-                reconnectMessages[phonenum] = null;
+                reconnectMessages[hashNum] = null;
             }, retryTimeout);
             return res.status(500).send('Error sending data to client');
         }
         if (state === 'ON') {
-            updateValveState('ON', phonenum);
+            updateValveState('ON', hashNum);
             res.status(200).send('Toggle state updated to ON and sent to client');
         } else if (state === 'OFF') {
-            updateValveState('OFF', phonenum);
+            updateValveState('OFF', hashNum);
             res.status(200).send('Toggle state updated to OFF and sent to client');
         } else {
             res.status(200).send('Toggle state sent but no CK received');
@@ -350,8 +352,8 @@ app.post('/update_toggle_state', (req, res) => {
 });
 
 app.get('/toggle_state', (req, res) => {
-    const phonenum = req.query.phonenum;
-    res.json({ toggleState: globalToggleStates[phonenum], reconnectMessage: reconnectMessages[phonenum] });
+    const hashNum = req.query.hashNum;
+    res.json({ toggleState: globalToggleStates[hashNum], reconnectMessage: reconnectMessages[hashNum] });
 });
 
 app.get('/events', (req, res) => {
@@ -359,10 +361,10 @@ app.get('/events', (req, res) => {
     res.setHeader('Cache-Control', 'no-cache');
     res.setHeader('Connection', 'keep-alive');
     
-    const phonenum = req.query.phonenum;
+    const hashNum = req.query.hashNum;
 
     const checkDatabaseAndUpdate = () => {
-        pool.query('SELECT waterdata FROM waterm WHERE phonenum = ? ORDER BY created_at DESC LIMIT 1', [phonenum], (err, results) => {
+        pool.query('SELECT waterdata FROM waterm WHERE hashNum = ? ORDER BY created_at DESC LIMIT 1', [hashNum], (err, results) => {
             if (err) {
                 console.error('Error retrieving data from MySQL:', err);
                 return;
@@ -383,9 +385,9 @@ app.get('/events', (req, res) => {
 });
 
 app.get('/get_water_level_and_mode', (req, res) => {
-    const phonenum = req.query.phonenum;
+    const hashNum = req.query.hashNum;
 
-    pool.query('SELECT water_level_setting, mode FROM waterm WHERE phonenum = ? ORDER BY created_at DESC LIMIT 1', [phonenum], (err, results) => {
+    pool.query('SELECT water_level_setting, mode FROM waterm WHERE hashNum = ? ORDER BY created_at DESC LIMIT 1', [hashNum], (err, results) => {
         if (err) {
             console.error('Error retrieving water level and mode:', err);
             return res.status(500).send('Error retrieving data.');
@@ -402,23 +404,34 @@ app.get('/get_water_level_and_mode', (req, res) => {
     });
 });
 
+let server; // 반드시 전역에 선언
+
+
 
 process.on('uncaughtException', function (err) {
-    console.error('Uncaught exception:', err);
-    // 복구 시도 또는 안전하게 종료
-    // MySQL 연결 복구 시도
-    pool.getConnection((err, connection) => {
-        if (err) {
-            console.error('Error getting connection from pool:', err);
-        } else {
-            connection.release(); // 연결 복구 시도
-        }
-    });
+  console.error('Uncaught exception:', err);
 
-    server.close(() => {
-        server.listen(TCP_PORT, () => console.log(`Server re-listening on port ${TCP_PORT}...`));
+  // MySQL 연결 테스트 (선택)
+  pool.getConnection((connErr, conn) => {
+    if (connErr) return console.error('MySQL connection failed after crash:', connErr);
+    conn.query('SELECT 1', (queryErr) => {
+      conn.release();
+      if (queryErr) console.error('MySQL test query failed:', queryErr);
     });
+  });
+
+//   if (server) {
+//     server.close(() => {
+//       console.log('Server closed after crash. Restarting...');
+
+//       // 새 서버 재시작
+//       server = app.listen(TCP_PORT, () => {
+//         console.log(`Server re-listening on port ${TCP_PORT}...`);
+//       });
+//     });
+//   }
 });
+
 
 // 명령 및 데이터 큐 추가
 const commandQueue = [];
@@ -481,11 +494,11 @@ function sendCommandToClient(command, callback) {
         });
     } else {
         console.error('Client socket not found for key:', clientKey);
-        const phonenum = clients[clientKey] ? clients[clientKey].phonenum : null;
-        if (phonenum) {
-            reconnectMessages[phonenum] = '장치와 연결 재시도중';
+        const hashNum = clients[clientKey] ? clients[clientKey].hashNum : null;
+        if (hashNum) {
+            reconnectMessages[hashNum] = '장치와 연결 재시도중';
             setTimeout(() => {
-                reconnectMessages[phonenum] = null;
+                reconnectMessages[hashNum] = null;
             }, retryTimeout);
         }
         callback(new Error('Client not connected'));
@@ -499,6 +512,13 @@ function handleClientData(clientKey, data) {
 
     lastMessageReceivedTimes[clientKey] = Date.now();
 
+    if (receivedData.startsWith("ID:")) {
+        const extractedhashNum = receivedData.split("ID:")[1].trim();
+        clients[clientKey].hashNum = extractedhashNum;
+        console.log(`hashNum registered: ${extractedhashNum} for ${clientKey}`);
+        return; // 이후 처리 생략 (수위 데이터가 아님)
+    }
+
     // OCK 또는 FCK 메시지를 수신하면 타이머를 취소하고 밸브 상태를 업데이트
     if (receivedData === 'OCK' || receivedData === 'FCK') {
         console.log(`${receivedData} received from client.`);
@@ -508,7 +528,7 @@ function handleClientData(clientKey, data) {
             console.log('Timer cancelled, valid response received within timeout.');
         }
         commandReceiveTimes[clientKey] = Date.now();
-        updateValveState(receivedData === 'OCK' ? 'ON' : 'OFF', clients[clientKey].phonenum);
+        updateValveState(receivedData === 'OCK' ? 'ON' : 'OFF', clients[clientKey].hashNum);
         return;
     }
 
@@ -521,10 +541,10 @@ function handleClientData(clientKey, data) {
 
         if (timeElapsed <= 29000) {
             console.log(`Resending command to client ${clientKey} as response time was ${timeElapsed}ms.`);
-            const toggleStateString = globalToggleStates[clients[clientKey].phonenum] === 'ON' ? 'ADADADADAD' : 'HZHZHZHZHZ';
+            const toggleStateString = globalToggleStates[clients[clientKey].hashNum] === 'ON' ? 'ADADADADAD' : 'HZHZHZHZHZ';
             
             setTimeout(() => {
-                resendToggleCommand(clients[clientKey], toggleStateString, clientKey, clients[clientKey].phonenum);
+                resendToggleCommand(clients[clientKey], toggleStateString, clientKey, clients[clientKey].hashNum);
             }, 1000);
         }
         return;
@@ -554,34 +574,42 @@ function handleClientData(clientKey, data) {
     // 수신된 데이터를 파싱
     const dataParts = receivedData.split('!');
     const waterdata = dataParts[0];
-    const phonenum = dataParts.length > 1 ? parseInt(dataParts[1]) : null;
-
-    console.log(`Parsed waterdata: ${waterdata}, phonenum: ${phonenum}`);
-
-    if (!phonenum || phonenum === null || isNaN(phonenum)) {
-        console.error(`Invalid phonenum: ${phonenum}`);
+    const hashNum = dataParts.length > 1 ? dataParts[1] : null;
+    if (!hashNum || hashNum.length < 8) {
+        console.error(`Invalid hashNum: ${hashNum}`);
         return;
     }
 
-    if (phonenum && clients[clientKey]) {
-        clients[clientKey].phonenum = phonenum;
+
+    console.log(`Parsed waterdata: ${waterdata}, hashNum: ${hashNum}`);
+
+    function isValidHashNum(hashNum) {
+        return /^[0-9A-Fa-f]{8}$/.test(hashNum); // 정확히 8자리 HEX인지 검사
+    }
+    if (!isValidHashNum(hashNum)) {
+        console.error(`Invalid hashNum: ${hashNum}`);
+        return;
+    }
+
+    if (hashNum && clients[clientKey]) {
+        clients[clientKey].hashNum = hashNum;
 
         // globalSettings에서 최신 water_level_setting과 mode 가져오기
-        const settings = globalSettings[phonenum] || { waterLevel: null, mode: null };
+        const settings = globalSettings[hashNum] || { waterLevel: 10, mode: 'M' };
 
         if (!settings.waterLevel || !settings.mode) {
-            console.log(`No saved settings for phonenum: ${phonenum}. Using default settings.`);
+            console.log(`No saved settings for hashNum: ${hashNum}. Using default settings.`);
         } else {
-            console.log(`Applying saved settings for phonenum: ${phonenum}:`, settings);
+            console.log(`Applying saved settings for hashNum: ${hashNum}:`, settings);
         }
 
         const createdAt = new Date().toISOString().slice(0, 19).replace('T', ' ');
 
         // 수신된 waterdata와 함께 가장 최근의 water_level_setting과 mode를 저장
-        console.log(`Inserting data: waterdata=${waterdata}, phonenum=${phonenum}, createdAt=${createdAt}`);
+        console.log(`Inserting data: waterdata=${waterdata}, hashNum=${hashNum}, createdAt=${createdAt}`);
         pool.query(
-            'INSERT INTO waterm (waterdata, created_at, phonenum, valve_of, water_level_setting, mode) VALUES (?, ?, ?, ?, ?, ?)',
-            [waterdata, createdAt, phonenum, globalToggleStates[phonenum], settings.waterLevel, settings.mode],
+            'INSERT INTO waterm (waterdata, created_at, hashNum, valve_of, water_level_setting, mode) VALUES (?, ?, ?, ?, ?, ?)',
+            [waterdata, createdAt, hashNum, globalToggleStates[hashNum], settings.waterLevel, settings.mode],
             (err, results) => {
                 if (err) {
                     console.error('Error inserting data into MySQL:', err);
@@ -598,24 +626,24 @@ function handleClientData(clientKey, data) {
                     });
 
                     // 추가: waterdata와 water_level_setting 비교 후 로그 출력
-                    compareWaterLevelAndData(phonenum, waterdata);
+                    compareWaterLevelAndData(hashNum, waterdata);
                 }
             }
         );
     } else {
-        console.error('Phonenum is null or invalid, or client not found.');
+        console.error('hashNum is null or invalid, or client not found.');
     }
 }
 
 
-function compareWaterLevelAndData(phonenum, waterdata) {
+function compareWaterLevelAndData(hashNum, waterdata) {
     // 비교 기준 변수 추가
     const water_level_setting_limit1 = 250;
 
     // 가장 최근의 water_level_setting과 mode, valve 상태 가져오기
     pool.query(
-        'SELECT water_level_setting, mode, valve_of FROM waterm WHERE phonenum = ? ORDER BY created_at DESC LIMIT 1',
-        [phonenum],
+        'SELECT water_level_setting, mode, valve_of FROM waterm WHERE hashNum = ? ORDER BY created_at DESC LIMIT 1',
+        [hashNum],
         (err, results) => {
             if (err) {
                 console.error('Error retrieving water level setting, mode, and valve state:', err);
@@ -624,14 +652,15 @@ function compareWaterLevelAndData(phonenum, waterdata) {
 
             if (results.length > 0) {
                 const waterLevelSetting = results[0].water_level_setting * 100; // 수위 설정값에 100배 적용
-                const mode = results[0].mode === 'M' ? 'manual' : results[0].mode === 'A' ? 'auto' : 'scheduler'; 
+                // const mode = results[0].mode === 'M' ? 'manual' : results[0].mode === 'A' ? 'auto' : 'scheduler'; 
+                const mode = 'manual';
                 const actualValveState = results[0].valve_of === 'ON' ? 'OPEN' : 'CLOSED'; // DB에서 실제 밸브 상태 가져옴
 
                 // 수동 모드 또는 스케줄러 모드일 경우 자동 제어를 중지
-                if (mode === 'manual' || mode === 'scheduler') {
-                    console.log(`모드가 ${mode}이므로 자동 제어를 중지합니다.`);
-                    return; // 수동 또는 스케줄러 모드일 때는 아무것도 하지 않음
-                }
+                // if (mode === 'manual' || mode === 'scheduler') {
+                //     console.log(`모드가 ${mode}이므로 자동 제어를 중지합니다.`);
+                //     return; // 수동 또는 스케줄러 모드일 때는 아무것도 하지 않음
+                // }
 
                 // 나머지는 기존의 자동 제어 로직 유지
                 if (waterdata === null || waterdata === 0) {
@@ -644,14 +673,14 @@ function compareWaterLevelAndData(phonenum, waterdata) {
                 if (waterdata > waterLevelSetting) {
                     if (actualValveState !== 'CLOSED') {
                         console.log('Waterdata가 설정한 수위를 초과했습니다. 닫힘 명령을 보냅니다.');
-                        sendCommand(phonenum, "HZHZHZHZHZ");
+                        sendCommand(hashNum, "HZHZHZHZHZ");
                     } else {
                         console.log('밸브가 이미 닫혀있습니다. 추가 명령을 보내지 않습니다.');
                     }
                 } else if (waterdata <= water_level_setting_limit1) {
                     if (actualValveState !== 'OPEN') {
                         console.log(`Waterdata가 limit1(${water_level_setting_limit1}) 이하입니다. 열림 명령을 보냅니다.`);
-                        sendCommand(phonenum, "ADADADADAD");
+                        sendCommand(hashNum, "ADADADADAD");
                     } else {
                         console.log('밸브가 이미 열려있습니다. 추가 명령을 보내지 않습니다.');
                     }
@@ -668,8 +697,8 @@ function compareWaterLevelAndData(phonenum, waterdata) {
 
 // 장치에 명령을 한 번 전송하는 함수
 // 장치에 명령을 한 번 전송하는 함수
-function sendCommand(phonenum, command) {
-    const clientKey = Object.keys(clients).find(key => clients[key].phonenum === phonenum);
+function sendCommand(hashNum, command) {
+    const clientKey = Object.keys(clients).find(key => clients[key].hashNum === hashNum);
 
     if (!clientKey) {
         console.log('Client not connected');
@@ -685,7 +714,43 @@ function sendCommand(phonenum, command) {
     });
 }
 
+function checkPortInUse(port, callback) {
+    const tester = require('net').createServer()
+        .once('error', err => callback(err.code === 'EADDRINUSE'))
+        .once('listening', () => tester.once('close', () => callback(false)).close())
+        .listen(port);
+}
 
-// 서버 시작
-startServer();
-fetchLatestToggleStates();
+function startApp() {
+    checkPortInUse(TCP_PORT, (inUse) => {
+        if (inUse) {
+            console.error(`❌ TCP 포트 ${TCP_PORT}가 이미 사용 중입니다. 서버 중지`);
+            process.exit(1);
+        } else {
+            startServer();               // TCP 서버 시작
+            fetchLatestToggleStates();   // DB 상태 로딩
+
+            server = app.listen(PORT, () => {
+                console.log(`📡 Web server listening on port ${PORT}`);
+            });
+        }
+    });
+}
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught exception:', err);
+
+    checkPortInUse(TCP_PORT, (inUse) => {
+        if (inUse) {
+            console.error(`⚠️ 포트 ${TCP_PORT} 충돌 감지. 서버 재시작 불가.`);
+            process.exit(1);
+        } else {
+            console.log('서버 재시작 시도...');
+            startApp();
+        }
+    });
+});
+
+startApp(); // 최초 실행
+
+

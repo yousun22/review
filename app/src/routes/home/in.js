@@ -9,7 +9,7 @@ router.get("/", ctrl.output.home);
 router.get("/login", ctrl.output.login);
 router.get("/register", ctrl.output.register);
 router.get("/userif", ctrl.output.userif);
-
+router.get("/5grains", ctrl.output.grains);
 router.post("/login", ctrl.process.login);
 router.post("/register", ctrl.process.register);
  

@@ -1,0 +1,128 @@
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.card {
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  padding: 16px;
+  width: 300px;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+.card-header {
+  margin-bottom: 8px;
+}
+
+.card-header .loca-id {
+  font-size: 18px;
+  font-weight: bold;
+  color: #222;
+}
+
+.card-header .location {
+  font-size: 14px;
+  color: #666;
+  margin-top: 12px;
+}
+
+.water-level {
+  font-size: 24px;
+  margin: 10px 0;
+}
+
+.control-buttons button {
+  padding: 8px 16px;
+  margin: 4px;
+  border: none;
+  border-radius: 5px;
+  font-weight: bold;
+}
+
+.open-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.close-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.timer-text {
+  font-size: 14px;
+  color: #555;
+  margin-left: 8px;
+}
+
+.valve-btn:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.zero-btn {
+  margin-left: 5px;
+  padding: 4px 10px;
+  font-size: 0.9em;
+  background-color: #666;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+.zero-btn:hover {
+  background-color: #555;
+}
+
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+  background-color: #fff;
+  margin: 20% auto;
+  padding: 20px;
+  width: 300px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-buttons .gray-btn {
+  background: #888;
+  color: white;
+  padding: 10px 0;
+  width: 80px;            /* 버튼 너비 통일 */
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: center;
+}
+
+.modal-buttons .gray-btn:hover {
+  background: #666;
+}
+

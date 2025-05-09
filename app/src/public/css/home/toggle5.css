@@ -1,0 +1,160 @@
+/* 카드 컨테이너: 카드 1개라도 화면 전체에 맞춤 */
+.card-container {
+  display: flex;
+  flex-direction: column;      /* 카드가 세로로 배치되도록 */
+  justify-content: center;     /* 세로 중앙 정렬 */
+  align-items: center;         /* 가로 중앙 정렬 */
+  min-height: 100vh;           /* 💡 화면 전체 높이를 차지해야 중앙 정렬 가능 */
+  padding: 4vh 4vw;
+  box-sizing: border-box;
+}
+
+/* 카드 본체: 가로 100% 사용하되 최대 크기 제한 */
+.card {
+  width: 100%;
+  max-width: 1000px;
+  box-sizing: border-box;
+  margin: 2vh auto 0;
+  padding: 8vh 5vw 8vh;  /* 위/양쪽/아래 */
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  box-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* 제목 (loca-id) */
+.card-header .loca-id {
+  font-size: clamp(80px, 3vw, 120px);
+  font-weight: bold;
+  margin-bottom: 6.0vh;
+}
+
+/* 주소 (location) + 지도 아이콘 */
+.card-header .location {
+  font-size: clamp(40px, 2vw, 90px);
+  color: #555;
+  display: flex;
+  align-items: center;
+  gap: 30px;
+  flex-wrap: wrap;
+}
+
+
+/* 수위 표시 */
+.water-level {
+  font-size: clamp(80px, 4vw, 128px);
+  font-weight: bold;
+  margin: 6.0vh 0 6.0vh;
+}
+
+/* 버튼 묶음 */
+.control-buttons {
+  display: flex;
+  gap: 1vw;
+  margin-top: 3.0vh;
+}
+
+/* 공통 버튼 스타일 */
+.control-buttons button,
+.zero-btn {
+  flex: 1;
+  font-size: clamp(50px, 2.5vw, 100px);
+  padding: clamp(10px, 1.5vh, 18px) 0;
+  border: none;
+  border-radius: 8px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+/* 버튼 색상별 */
+.open-btn {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.close-btn {
+  background-color: #f44336;
+  color: white;
+}
+
+.zero-btn {
+  background-color: #666;
+  color: white;
+  margin-left: 2vw;
+}
+
+.zero-btn:hover {
+  background-color: #555;
+}
+
+/* 타이머 텍스트 */
+.timer-text {
+  font-size: clamp(10px, 2vw, 16px);
+  margin-left: 0.8vw;
+  align-self: center;
+}
+
+/* 모달 백그라운드 */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 9999;
+  left: 0; top: 0; right: 0; bottom: 0;
+  background-color: rgba(0, 0, 0, 0.4);
+}
+
+/* 모달 내용 */
+.modal-content {
+  background-color: #fff;
+  margin: 20% auto;
+  padding: 20px;
+  width: 300px;
+  text-align: center;
+  border-radius: 8px;
+}
+
+/* 모달 버튼 영역 */
+.modal-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.modal-buttons .gray-btn {
+  background: #888;
+  color: white;
+  padding: 10px 0;
+  width: 80px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  text-align: center;
+}
+
+.modal-buttons .gray-btn:hover {
+  background: #666;
+}
+
+.page-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 3vh auto 3vh;  /* 👈 여기서 '6vh'가 카드와의 간격 */
+  gap: 7px;
+  font-size: clamp(32px, 2vw, 32px);
+  color: #333;
+  font-weight: bold;
+}
+
+.footer-logo {
+  height: clamp(32px, 2vw, 32px);
+  object-fit: contain;
+  margin-top: 4px;  /* 👈 이미지 아래로 조금 내림 */
+}
+
+.card:last-child {
+  margin-bottom: 0 !important;  /* 마지막 카드 여백 완전 제거 */
+}
