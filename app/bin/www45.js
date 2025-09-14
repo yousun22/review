@@ -643,9 +643,15 @@ function handleClientData(clientKey, data) {
     const waterdata = dataParts[0];
     const hashNum = dataParts[1];
 
-    if (!/^[0-9A-Fa-f]{8}$/.test(hashNum)) {
-        console.error(`❌ Invalid hashNum in waterdata: ${hashNum}`);
-        return;
+    // 중복 소켓 확인 및 이전 소켓 제거
+    const existingClientKey = Object.keys(clients).find(key =>
+        clients[key].hashNum === hashNum && key !== clientKey
+    );
+
+    if (existingClientKey) {
+        console.log(`🔁 Duplicate hashNum detected via waterdata: ${hashNum}. Closing previous socket ${existingClientKey}`);
+        clients[existingClientKey].socket.end();
+        delete clients[existingClientKey];
     }
 
     console.log(`Parsed waterdata: ${waterdata}, hashNum: ${hashNum}`);
@@ -669,7 +675,7 @@ function handleClientData(clientKey, data) {
                         console.error('Error inserting data into MySQL:', err);
                     } else {
                         console.log('Data with zero_point inserted');
-                        clients[clientKey].socket.write("WKWKWKWK", 'utf8');
+                        clients[clientKey].socket.write("WKWKWK", 'utf8');
                         compareWaterLevelAndData(hashNum, waterdata); // 이후 로직
                     }
                 }

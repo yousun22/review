@@ -6,54 +6,6 @@
     <title>사물인터넷 물꼬 - sfkorea</title>
     <link rel="stylesheet" href="/css/home/toggle5.css">
 </head>
-<style>
-.weak-signal-warning {
-    position: fixed;
-    top: 30%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    padding: 20px 30px;
-    background-color: #fff;
-    border: 1px solid #ccc;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-    z-index: 9999;
-    text-align: center;
-    border-radius: 8px;
-    font-family: 'Segoe UI', sans-serif;
-}
-
-.weak-signal-warning p {
-    margin: 0 0 16px;
-    font-size: 15px;
-    line-height: 1.5;
-}
-
-.weak-signal-warning button {
-    padding: 6px 16px;
-    background-color: #007BFF;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    font-size: 14px;
-    cursor: pointer;
-}
-
-.weak-signal-warning button:hover {
-    background-color: #0056b3;
-}
-</style>
-
-<script>
-function showWeakSignalWarning() {
-    const warning = document.createElement('div');
-    warning.className = 'weak-signal-warning';
-    warning.innerHTML = `
-        <p>⚠️ 현재 장치의 위치(예: 철제 창고, 지하)에서<br>LTE-M 신호가 약해 통신이 지연되고 있습니다.</p>
-        <button onclick="this.parentElement.remove()">확인</button>
-    `;
-    document.body.appendChild(warning);
-}
-</script>
 
 <body>
     <div class="card-container">
@@ -135,6 +87,9 @@ function showWeakSignalWarning() {
     
         // 버튼 클릭 처리
         function toggleValve(hashNum) {
+            showNetworkModal();  // ✅ 모달 표시
+            return;              // ✅ 실제 명령은 전송 안 함
+
             if (valveLockStates[hashNum]) {
                 console.warn(`⏳ ${hashNum}는 잠금 중`);
                 return;
@@ -154,21 +109,11 @@ function showWeakSignalWarning() {
             updateValveButton(hashNum);
             zeroBtn.disabled = true;
 
-            const controller = new AbortController(); // 5초 제한용
-            const signal = controller.signal;
-            const weakSignalTimer = setTimeout(() => {
-                controller.abort(); // 요청 중단
-                showWeakSignalWarning(); // 사용자 안내
-            }, 5000);
-
             fetch('/update_toggle_state', {
                 method: 'POST',
-                signal,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ hashNum, toggleState: isOpen })
             }).then(res => {
-                clearTimeout(weakSignalTimer); // 응답 도착 시 타이머 제거
-
                 if (res.ok) {
                     let countdown = 35;
                     timerSpan.innerText = `(${countdown})`;
@@ -180,30 +125,29 @@ function showWeakSignalWarning() {
                         } else {
                             clearInterval(intervalId);
                             timerSpan.innerText = '';
+                            //console.log('35초 끝났다. 복원 시도:', hashNum);
                             valveLockStates[hashNum] = false;
                             updateValveButton(hashNum);
-                            zeroBtn.disabled = false;
+                            zeroBtn.disabled = false; // ✅ 복원
                         }
                     }, 1000);
                 } else {
                     console.error('❌ 명령 전송 실패');
-                    restoreButtons();
+                    restoreButtons(hashNum);
                 }
             }).catch((err) => {
-                clearTimeout(weakSignalTimer); // 실패에도 타이머 제거
-                if (err.name !== 'AbortError') {
-                    console.error('❌ 네트워크 오류', err);
-                }
-                restoreButtons();
+                console.error('❌ 네트워크 오류', err);
+                restoreButtons(hashNum);
             });
 
-            function restoreButtons() {
+            function restoreButtons(hashNum) {
                 valveLockStates[hashNum] = false;
                 updateValveButton(hashNum);
                 zeroBtn.disabled = false;
                 timerSpan.innerText = '';
             }
         }
+
 
         function updateDeviceUI(hashNum, data) {
             const waterLevelSpan = document.getElementById(`data-${hashNum}`);
@@ -281,17 +225,36 @@ function showWeakSignalWarning() {
         document.getElementById("networkModal").style.display = "none";
     }
 
+    function sendToggleCommand(hashNum, newState) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            controller.abort(); // 요청 중단
+            showWeakSignalWarning(); // 안내창 띄우기
+        }, 5000); // 5초 타이머 시작
 
-    function showWeakSignalWarning() {
-        const warning = document.createElement('div');
-        warning.className = 'weak-signal-warning';
-        warning.innerHTML = `
-            <p>⚠️ 현재 장치의 위치(예: 철제 창고, 지하)에서<br>LTE-M 신호가 약해 통신이 지연되고 있습니다.</p>
-            <button onclick="this.parentElement.remove()">확인</button>
-        `;
-        document.body.appendChild(warning);
+        fetch('/update_toggle_state', {
+            method: 'POST',
+            signal: controller.signal,
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                hashNum: hashNum,
+                toggleState: newState
+            })
+        })
+        .then(res => res.text())
+        .then(text => {
+            clearTimeout(timeoutId); // 정상 응답 시 타이머 해제
+            console.log('서버 응답:', text);
+        })
+        .catch(err => {
+            if (err.name !== 'AbortError') {
+                console.error('요청 오류:', err);
+            }
+        });
     }
-            
+
 
     </script>
     <div id="zeroModal" class="modal">

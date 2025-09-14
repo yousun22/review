@@ -158,3 +158,10 @@
 .card:last-child {
   margin-bottom: 0 !important;  /* 마지막 카드 여백 완전 제거 */
 }
+
+button:disabled,
+.zero-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}

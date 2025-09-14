@@ -255,24 +255,36 @@ app.post('/zero_point', (req, res) => {
     );
 });
 
-
+function isSuspiciousIP(ip) {
+    return ip.startsWith('45.') || ip.startsWith('185.') || ip.startsWith('103.') || ip.startsWith('94.') || ip.startsWith('91.');
+}
 
 function startServer() {
     const server = net.createServer(function(socket) {
-        const clientKey = `${socket.remoteAddress}:${socket.remotePort}`;
-        console.log(`${clientKey} connected.`);
+        const ip = socket.remoteAddress.replace(/^.*:/, '');
+        const clientKey = `${ip}:${socket.remotePort}`;
 
-        // 연결되자마자 NSNSNSNSNS 전송 (장치가 응답 기다리는 걸 해결)
-        socket.write("NSNSNS", 'utf8', (err) => {
-            if (err) {
-                console.error('Error sending initial NSNS:', err)
-                logSocketError(`Error sending initial NSNS: ${err.message}`);
-            } else {
-                console.log(`Initial NSNS sent to client ${clientKey}`);
-            }
-        });
+        if (isSuspiciousIP(ip)) {
+            console.log(`❌ [BLOCKED] 의심 IP 접근 차단: ${ip}`);
+            logSocketError(`Blocked suspicious IP: ${ip}`);
+            socket.destroy();
+            return;
+        }
 
-        // 기존 소켓이 존재하면 종료
+        console.log(`🔌 [NEW] ${clientKey} connected.`);
+
+        // 30초 이내에 hashNum 등록되지 않으면 연결 종료
+        // const earlyCloseTimer = setTimeout(() => {
+        //     if (!clients[clientKey]?.hashNum) {
+        //         console.warn(`⏱ [BLOCK] ${clientKey} hashNum 등록 없이 대기 → 소켓 종료`);
+        //         socket.end(); // 연결 종료
+        //     }
+        // }, 90000);
+
+        // socket.on('close', () => clearTimeout(earlyCloseTimer));
+        // socket.on('error', () => clearTimeout(earlyCloseTimer));
+
+        // 기존 연결 종료 처리
         if (clients[clientKey]) {
             console.log(`Existing connection found for ${clientKey}. Closing it.`);
             clients[clientKey].socket.end();
@@ -282,13 +294,28 @@ function startServer() {
         clients[clientKey] = { socket, hashNum: null, timer: null };
 
         socket.setKeepAlive(true, 60000);
-        //socket.setTimeout(50000);
-        socket.setTimeout(3*60*1000);
-
-        // 여기에서 최대 리스너 수를 늘립니다.
+        socket.setTimeout(3 * 60 * 1000);
         socket.setMaxListeners(20);
 
+        socket.write("NSNSNS", 'utf8', (err) => {
+            if (err) {
+                console.error('Error sending initial NSNS:', err);
+                logSocketError(`Error sending initial NSNS: ${err.message}`);
+            } else {
+                console.log(`Initial NSNS sent to client ${clientKey}`);
+            }
+        });
+
         socket.on('data', function(data) {
+            const str = data.toString();
+
+            // 🚫 HTTP 요청 필터링
+            if (str.includes("GET") || str.includes("HTTP/1.1")) {
+                console.warn(`🚫 HTTP 요청 탐지 → 종료: ${clientKey}`);
+                socket.end();
+                return;
+            }
+
             enqueueData({ clientKey, data });
         });
 
@@ -308,7 +335,6 @@ function startServer() {
         socket.on('error', function(err) {
             console.log('Error with client ' + clientKey + ':', err.message);
             logSocketError(`Socket error on ${clientKey}: ${err.message}`);
-
             if (clients[clientKey]) {
                 clearTimeout(clients[clientKey].timer);
             }
@@ -643,9 +669,15 @@ function handleClientData(clientKey, data) {
     const waterdata = dataParts[0];
     const hashNum = dataParts[1];
 
-    if (!/^[0-9A-Fa-f]{8}$/.test(hashNum)) {
-        console.error(`❌ Invalid hashNum in waterdata: ${hashNum}`);
-        return;
+    // 중복 소켓 확인 및 이전 소켓 제거
+    const existingClientKey = Object.keys(clients).find(key =>
+        clients[key].hashNum === hashNum && key !== clientKey
+    );
+
+    if (existingClientKey) {
+        console.log(`🔁 Duplicate hashNum detected via waterdata: ${hashNum}. Closing previous socket ${existingClientKey}`);
+        clients[existingClientKey].socket.end();
+        delete clients[existingClientKey];
     }
 
     console.log(`Parsed waterdata: ${waterdata}, hashNum: ${hashNum}`);
@@ -669,7 +701,7 @@ function handleClientData(clientKey, data) {
                         console.error('Error inserting data into MySQL:', err);
                     } else {
                         console.log('Data with zero_point inserted');
-                        clients[clientKey].socket.write("WKWKWKWK", 'utf8');
+                        clients[clientKey].socket.write("WKWKWK", 'utf8');
                         compareWaterLevelAndData(hashNum, waterdata); // 이후 로직
                     }
                 }

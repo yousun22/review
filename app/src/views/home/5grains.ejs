@@ -148,10 +148,18 @@
 
             //let level = levelRaw - zeroPoint;
             let level;
+            // if (levelRaw < zeroPoint) {
+            //     level = MAX_LEVEL - (zeroPoint - levelRaw);  // → 한 바퀴 돌아온 것
+            // } else {
+            //     level = levelRaw - zeroPoint;
+            // }
             if (levelRaw < zeroPoint) {
-                level = MAX_LEVEL - (zeroPoint - levelRaw);  // → 한 바퀴 돌아온 것
+                level = zeroPoint - levelRaw;  // → 한 바퀴 돌아온 것
             } else {
-                level = levelRaw - zeroPoint;
+                level = MAX_LEVEL-levelRaw + zeroPoint;
+            }
+            if (level >= 12.5 && level <= 12.7) {
+                level = 0;
             }
 
             if (waterLevelSpan) {
